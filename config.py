@@ -1,7 +1,7 @@
 # config.py - 专门存放变量的文件
 class Config:
     # VMD参数配置
-    K = 4
+    K = 3
     alpha = 3000
     tau = 0
     DC = 0
@@ -17,7 +17,7 @@ class Config:
     train_percent = 0.8
 
     # 训练配置
-    epochs = 3000
+    epochs = 300
     lr = 0.001   #学习率
     
     
