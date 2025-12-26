@@ -1,0 +1,8 @@
+best_mape=0.5511414468210255
+K=3
+alpha=500
+tau=1
+DC=0
+init=1
+tol=1e-05
+N=500

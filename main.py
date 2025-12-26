@@ -1,16 +1,16 @@
 import pandas as pd
 import numpy as np
 from sklearn.preprocessing import MinMaxScaler
-from vmdpy import VMD
 import torch
 import torch.nn as nn
-from cnn import CNN, CNN_LSTM, CNN_BiLSTM
+from cnn import CNN, CNN_LSTM, CNN_BiLSTM, TCN
 import matplotlib.pyplot as plt
 from config import Config
 import matplotlib.pyplot as plt
 import numpy as np
 import matplotlib.pyplot as plt
 import os
+import my_vmd
 
 
 
@@ -43,15 +43,17 @@ def vmd_decompose(signal, K=Config.K):
     DC = Config.DC
     init = Config.init
     tol = Config.tol
+    N = Config.N
 
-    imfs, _, _ = VMD(
+    imfs, _, _ = my_vmd.VMD(
         signal,
         alpha=alpha,
         tau=tau,
         K=K,
         DC=DC,
         init=init,
-        tol=tol
+        tol=tol,
+        N=N
     )
     return imfs
 
@@ -67,15 +69,31 @@ def create_dataset(series, window=Config.window):
 def select_model(imf, window):
     std = np.std(imf)
 
-    if std > 0.15:
+    if std > Config.cnn_bilstm_threshold:
+        print(f"选择 CNN-BiLSTM 模型，IMF 标准差: {std:.4f}")
         return CNN_BiLSTM(window)
-    elif std > 0.05:
+    elif std > Config.cnn_lstm_threshold:
+        print(f"选择 CNN-LSTM 模型，IMF 标准差: {std:.4f}")
         return CNN_LSTM(window)
     else:
+        print(f"选择 CNN 模型，IMF 标准差: {std:.4f}")
         return CNN(window)
 
-def train_and_predict(series, model, window, epochs=Config.epochs):
-    X, y = create_dataset(series, window)
+def train_and_predict(series, model, window, epochs=Config.epochs, per_imf_normalize=False, batch_size=32, loss_type='mse'):
+    """
+    series: 1D numpy array (already globally scaled if applicable)
+    per_imf_normalize: if True, normalize this series to zero-mean unit-std for training,
+                       then inverse the predictions back to the input series scale before returning.
+    """
+    series_used = series.copy()
+    mu = 0.0
+    sigma = 1.0
+    if per_imf_normalize:
+        mu = np.mean(series_used)
+        sigma = np.std(series_used) if np.std(series_used) > 0 else 1.0
+        series_used = (series_used - mu) / sigma
+
+    X, y = create_dataset(series_used, window)
 
     split = int(len(X) * Config.train_percent)
     X_train, X_test = X[:split], X[split:]
@@ -86,22 +104,43 @@ def train_and_predict(series, model, window, epochs=Config.epochs):
     X_test = torch.tensor(X_test, dtype=torch.float32)
 
     optimizer = torch.optim.Adam(model.parameters(), lr=Config.lr)
-    loss_fn = nn.MSELoss()
+    if loss_type == 'mse':
+        loss_fn = nn.MSELoss()
+    elif loss_type == 'mae':
+        loss_fn = nn.L1Loss()
+    elif loss_type == 'huber':
+        loss_fn = nn.SmoothL1Loss()
+    else:
+        raise ValueError(f"Unsupported loss_type: {loss_type}")
 
     loss_history = []
 
+    num_train = X_train.size(0)
     for epoch in range(epochs):
-        optimizer.zero_grad()
+        epoch_losses = []
+        # iterate by sequential mini-batches (no shuffle for time series)
+        for start in range(0, num_train, batch_size):
+            end = start + batch_size
+            xb = X_train[start:end]
+            yb = y_train[start:end]
 
-        output = model(X_train).squeeze()
-        loss = loss_fn(output, y_train)
+            optimizer.zero_grad()
+            output = model(xb).squeeze()
+            loss = loss_fn(output, yb)
+            loss.backward()
+            optimizer.step()
 
-        loss.backward()
-        optimizer.step()
+            epoch_losses.append(loss.item())
 
-        loss_history.append(loss.item())
+        avg_loss = float(np.mean(epoch_losses)) if epoch_losses else 0.0
+        loss_history.append(avg_loss)
+        if (epoch + 1) % 100 == 0 or epoch == 0: # 100的倍数打印一次
+            print(f"Epoch {epoch+1}/{epochs}, Loss: {avg_loss:.6f}")
 
     preds = model(X_test).detach().numpy().flatten()
+
+    if per_imf_normalize:
+        preds = preds * sigma + mu
 
     return preds, loss_history
 
@@ -156,6 +195,40 @@ def plot_imf_prediction(imf_true, imf_pred, imf_index, save_path=None):
         plt.show()
 
 
+def plot_true_vs_vmd_sum(signal, imfs, test_percent=Config.test_percent, save_path=None):
+    """
+    Plot test-set true values vs sum of VMD IMF components over the test period.
+
+    signal: full original series (1D numpy array)
+    imfs: array shape (K, N)
+    test_percent: fraction of data used as test (e.g., 0.2)
+    """
+    K, N = imfs.shape
+    split = int(N * test_percent)
+
+    if split <= 0:
+        raise ValueError("test_percent results in zero-length test set")
+
+    y_true = signal[-split:]
+    vmd_sum = np.sum(imfs[:, -split:], axis=0)
+
+    plt.figure(figsize=(10, 4))
+    plt.plot(y_true, label='Test True', linewidth=2)
+    plt.plot(vmd_sum, '--', label='VMD Sum (test)', linewidth=2)
+    plt.title('Test True vs VMD Components Sum')
+    plt.xlabel('Time Step')
+    plt.ylabel('Value')
+    plt.legend()
+    plt.grid(alpha=0.3)
+    plt.tight_layout()
+
+    if save_path:
+        plt.savefig(save_path, dpi=300)
+        plt.close()
+    else:
+        plt.show()
+
+
 def vmd_cnn_bilstm_pipeline(file_path):
     series, scaler = load_data(file_path)
 
@@ -171,8 +244,15 @@ def vmd_cnn_bilstm_pipeline(file_path):
     loss_records = []
 
     for idx, imf in enumerate(imfs):
-        model = select_model(imf, window)
-        pred, loss_hist = train_and_predict(imf, model, window)
+        # 使用单独新增的 TCN 模型来预测 IMF-1（索引 0），不替换其他 IMF 的原有选择逻辑
+        if idx == -1:
+            model = TCN(window)
+            print(f"IMF-{idx+1}: 使用 TCN 模型预测")
+        else:
+            model = select_model(imf, window)
+
+        # 对每个 IMF 先做去均值标准化再训练（防止不同 IMF 幅度差异导致偏差）
+        pred, loss_hist = train_and_predict(imf, model, window, per_imf_normalize=True, batch_size=32, loss_type='huber')
         predictions.append(pred)
         loss_records.append(loss_hist)
         plot_imf_prediction(
@@ -269,6 +349,15 @@ def delete_all_png_files():
 if __name__ == '__main__':
     #删除所有.png文件
     delete_all_png_files()
+
+    # 调用 VMD 参数自动调优（必要时会写回 config.py）
+    # try:
+    #     print('Running VMD parameter tuner...')
+    #     from vmd_param_tuner import tune_vmd_params
+    #     best_params, best_mape = tune_vmd_params(max_evals=200, early_stop_mape=0.1)
+    #     print(f'VMD tuner finished. best_mape={best_mape:.6f}, best_params={best_params}')
+    # except Exception as e:
+    #     print('VMD tuner failed:', e)
 
     # 运行 VMD-CNN-BiLSTM 模型获取预测结果
     y_true, y_pred, loss_records = vmd_cnn_bilstm_pipeline("安徽数据集.xlsx")

@@ -43,3 +43,32 @@ class CNN_BiLSTM(nn.Module):
         _, (h, _) = self.bilstm(x)
         h = torch.cat((h[-2], h[-1]), dim=1)
         return self.fc(h)
+
+
+class TCN(nn.Module):
+    """
+    A small Temporal Convolutional Network (dilated conv) for sequence regression.
+    Keeps sequence length via padding and flattens features for a final linear layer.
+    """
+    def __init__(self, window, in_channels=1, channels=(32, 64, 64), kernel_size=3):
+        super().__init__()
+        layers = []
+        prev_ch = in_channels
+        dilation = 1
+        for ch in channels:
+            pad = (kernel_size - 1) * dilation // 2
+            layers.append(nn.Conv1d(prev_ch, ch, kernel_size, padding=pad, dilation=dilation))
+            layers.append(nn.ReLU())
+            prev_ch = ch
+            dilation *= 2
+
+        self.net = nn.Sequential(*layers)
+        # final linear maps flattened features (channels * seq_len) to 1
+        self.fc = nn.Linear(prev_ch * window, 1)
+
+    def forward(self, x):
+        # x: (batch, seq_len)
+        x = x.unsqueeze(1)  # (batch, 1, seq_len)
+        x = self.net(x)     # (batch, channels, seq_len)
+        x = x.view(x.size(0), -1)
+        return self.fc(x)
