@@ -1,11 +1,12 @@
 import numpy as np
-from main import load_data, vmd_decompose
+from main import load_data
 import matplotlib.pyplot as plt
+import my_vmd
 
 
 def analyze():
     series, scaler = load_data("安徽数据集.xlsx")
-    imfs = vmd_decompose(series)
+    imfs = my_vmd.vmd_decompose(series)
 
     # ensure shapes
     K, N = imfs.shape

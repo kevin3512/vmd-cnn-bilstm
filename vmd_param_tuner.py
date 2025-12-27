@@ -21,7 +21,7 @@ def tune_vmd_params(max_evals=200, early_stop_mape=0.1):
     Returns best_params dict and best_mape.
     If found mape <= early_stop_mape, update `config.py` VMD params automatically.
     """
-    series, scaler = load_data("安徽数据集.xlsx")
+    series, scaler = load_data(Config.file_name)
     series = np.array(series).flatten()
 
     # parameter grids (kept small to limit runtime)
@@ -163,7 +163,8 @@ def _save_tuner_plots(s_arr, vmd_sum_arr, params, mape, out_prefix='vmd_tuner_be
     plt.tight_layout()
     comp_path = f"{out_prefix}_compare.png"
     plt.savefig(comp_path, dpi=300)
-    plt.close()
+    # plt.close()
+    plt.show()
 
     # residual
     resid = s - v
