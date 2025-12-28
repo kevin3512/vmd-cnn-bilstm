@@ -382,3 +382,927 @@ lr: 0.001
 cnn_bilstm_threshold: 0.1
 cnn_lstm_threshold: 0.05
 
+
+================================================================
+================================================================
+Timestamp: 2025-12-28 11:33:37
+--------------- Metrics ---------------
+RMSE: 0.005584
+MAPE: 0.512194
+MAE: 0.003926
+R2: 0.996140
+--------------- Config ---------------
+K: 7
+alpha: 500
+tau: 1
+DC: 1
+init: 1
+tol: 1e-05
+N: 3000
+hasResidual: True
+vmd_enable: True
+vmd_single_model: True
+single_model: cnn
+file_name: 河北数据集.xlsx
+date_col: date
+value_col: value
+window: 24
+nrows: 0
+test_percent: 0.2
+train_percent: 0.8
+epochs: 500
+lr: 0.001
+cnn_bilstm_threshold: 0.1
+cnn_lstm_threshold: 0.05
+
+
+================================================================
+================================================================
+Timestamp: 2025-12-28 11:40:44
+--------------- Metrics ---------------
+RMSE: 0.005135
+MAPE: 0.450841
+MAE: 0.003465
+R2: 0.996735
+--------------- Config ---------------
+K: 7
+alpha: 500
+tau: 1
+DC: 1
+init: 1
+tol: 1e-05
+N: 3000
+hasResidual: False
+vmd_enable: True
+vmd_single_model: True
+single_model: lstm
+file_name: 河北数据集.xlsx
+date_col: date
+value_col: value
+window: 24
+nrows: 0
+test_percent: 0.2
+train_percent: 0.8
+epochs: 500
+lr: 0.001
+cnn_bilstm_threshold: 0.1
+cnn_lstm_threshold: 0.05
+
+
+================================================================
+================================================================
+Timestamp: 2025-12-28 11:48:35
+--------------- Metrics ---------------
+RMSE: 0.005785
+MAPE: 0.532621
+MAE: 0.004067
+R2: 0.995857
+--------------- Config ---------------
+K: 7
+alpha: 500
+tau: 1
+DC: 1
+init: 1
+tol: 1e-05
+N: 3000
+hasResidual: False
+vmd_enable: True
+vmd_single_model: True
+single_model: cnn_lstm
+file_name: 河北数据集.xlsx
+date_col: date
+value_col: value
+window: 24
+nrows: 0
+test_percent: 0.2
+train_percent: 0.8
+epochs: 500
+lr: 0.001
+cnn_bilstm_threshold: 0.1
+cnn_lstm_threshold: 0.05
+
+
+================================================================
+================================================================
+Timestamp: 2025-12-28 11:55:41
+--------------- Metrics ---------------
+RMSE: 0.016162
+MAPE: 1.631360
+MAE: 0.012420
+R2: 0.967667
+--------------- Config ---------------
+K: 3
+alpha: 500
+tau: 1
+DC: 1
+init: 1
+tol: 1e-05
+N: 3000
+hasResidual: False
+vmd_enable: True
+vmd_single_model: True
+single_model: cnn
+file_name: 河北数据集.xlsx
+date_col: date
+value_col: value
+window: 24
+nrows: 0
+test_percent: 0.2
+train_percent: 0.8
+epochs: 500
+lr: 0.001
+cnn_bilstm_threshold: 0.1
+cnn_lstm_threshold: 0.05
+
+
+================================================================
+================================================================
+Timestamp: 2025-12-28 12:00:20
+--------------- Metrics ---------------
+RMSE: 0.016447
+MAPE: 1.643045
+MAE: 0.012497
+R2: 0.966516
+--------------- Config ---------------
+K: 3
+alpha: 500
+tau: 1
+DC: 1
+init: 1
+tol: 1e-05
+N: 3000
+hasResidual: False
+vmd_enable: True
+vmd_single_model: False
+single_model: cnn_bilstm
+file_name: 河北数据集.xlsx
+date_col: date
+value_col: value
+window: 24
+nrows: 0
+test_percent: 0.2
+train_percent: 0.8
+epochs: 500
+lr: 0.001
+cnn_bilstm_threshold: 0.1
+cnn_lstm_threshold: 0.05
+
+
+================================================================
+================================================================
+Timestamp: 2025-12-28 12:07:06
+--------------- Metrics ---------------
+RMSE: 0.010587
+MAPE: 1.028980
+MAE: 0.007879
+R2: 0.986125
+--------------- Config ---------------
+K: 3
+alpha: 500
+tau: 1
+DC: 1
+init: 1
+tol: 1e-05
+N: 3000
+hasResidual: True
+vmd_enable: True
+vmd_single_model: False
+single_model: cnn_bilstm
+file_name: 河北数据集.xlsx
+date_col: date
+value_col: value
+window: 24
+nrows: 0
+test_percent: 0.2
+train_percent: 0.8
+epochs: 500
+lr: 0.001
+cnn_bilstm_threshold: 0.1
+cnn_lstm_threshold: 0.05
+
+
+================================================================
+================================================================
+Timestamp: 2025-12-28 12:11:03
+--------------- Metrics ---------------
+RMSE: 0.016335
+MAPE: 1.649419
+MAE: 0.012552
+R2: 0.966971
+--------------- Config ---------------
+K: 3
+alpha: 500
+tau: 1
+DC: 1
+init: 1
+tol: 1e-05
+N: 3000
+hasResidual: False
+vmd_enable: True
+vmd_single_model: True
+single_model: lstm
+file_name: 河北数据集.xlsx
+date_col: date
+value_col: value
+window: 24
+nrows: 0
+test_percent: 0.2
+train_percent: 0.8
+epochs: 500
+lr: 0.001
+cnn_bilstm_threshold: 0.1
+cnn_lstm_threshold: 0.05
+
+
+================================================================
+================================================================
+Timestamp: 2025-12-28 12:15:05
+--------------- Metrics ---------------
+RMSE: 0.016451
+MAPE: 1.657788
+MAE: 0.012597
+R2: 0.966500
+--------------- Config ---------------
+K: 3
+alpha: 500
+tau: 1
+DC: 1
+init: 1
+tol: 1e-05
+N: 3000
+hasResidual: False
+vmd_enable: True
+vmd_single_model: True
+single_model: cnn_lstm
+file_name: 河北数据集.xlsx
+date_col: date
+value_col: value
+window: 24
+nrows: 0
+test_percent: 0.2
+train_percent: 0.8
+epochs: 500
+lr: 0.001
+cnn_bilstm_threshold: 0.1
+cnn_lstm_threshold: 0.05
+
+
+================================================================
+================================================================
+Timestamp: 2025-12-28 12:17:09
+--------------- Metrics ---------------
+RMSE: 0.029604
+MAPE: 2.868814
+MAE: 0.021998
+R2: 0.891513
+--------------- Config ---------------
+K: 3
+alpha: 500
+tau: 1
+DC: 1
+init: 1
+tol: 1e-05
+N: 3000
+hasResidual: False
+vmd_enable: False
+vmd_single_model: True
+single_model: cnn
+file_name: 河北数据集.xlsx
+date_col: date
+value_col: value
+window: 24
+nrows: 0
+test_percent: 0.2
+train_percent: 0.8
+epochs: 500
+lr: 0.001
+cnn_bilstm_threshold: 0.1
+cnn_lstm_threshold: 0.05
+
+
+================================================================
+================================================================
+Timestamp: 2025-12-28 12:21:24
+--------------- Metrics ---------------
+RMSE: 0.031548
+MAPE: 2.932690
+MAE: 0.022806
+R2: 0.876797
+--------------- Config ---------------
+K: 3
+alpha: 500
+tau: 1
+DC: 1
+init: 1
+tol: 1e-05
+N: 3000
+hasResidual: False
+vmd_enable: False
+vmd_single_model: True
+single_model: lstm
+file_name: 河北数据集.xlsx
+date_col: date
+value_col: value
+window: 24
+nrows: 0
+test_percent: 0.2
+train_percent: 0.8
+epochs: 500
+lr: 0.001
+cnn_bilstm_threshold: 0.1
+cnn_lstm_threshold: 0.05
+
+
+================================================================
+================================================================
+Timestamp: 2025-12-28 12:23:08
+--------------- Metrics ---------------
+RMSE: 0.034291
+MAPE: 3.362402
+MAE: 0.026060
+R2: 0.854441
+--------------- Config ---------------
+K: 3
+alpha: 500
+tau: 1
+DC: 1
+init: 1
+tol: 1e-05
+N: 3000
+hasResidual: False
+vmd_enable: False
+vmd_single_model: True
+single_model: cnn_lstm
+file_name: 河北数据集.xlsx
+date_col: date
+value_col: value
+window: 24
+nrows: 0
+test_percent: 0.2
+train_percent: 0.8
+epochs: 500
+lr: 0.001
+cnn_bilstm_threshold: 0.1
+cnn_lstm_threshold: 0.05
+
+
+================================================================
+================================================================
+Timestamp: 2025-12-28 12:25:54
+--------------- Metrics ---------------
+RMSE: 0.035234
+MAPE: 3.437581
+MAE: 0.026747
+R2: 0.846328
+--------------- Config ---------------
+K: 3
+alpha: 500
+tau: 1
+DC: 1
+init: 1
+tol: 1e-05
+N: 3000
+hasResidual: False
+vmd_enable: False
+vmd_single_model: True
+single_model: cnn_bilstm
+file_name: 河北数据集.xlsx
+date_col: date
+value_col: value
+window: 24
+nrows: 0
+test_percent: 0.2
+train_percent: 0.8
+epochs: 500
+lr: 0.001
+cnn_bilstm_threshold: 0.1
+cnn_lstm_threshold: 0.05
+
+
+================================================================
+================================================================
+Timestamp: 2025-12-28 12:34:03
+--------------- Metrics ---------------
+RMSE: 0.007588
+MAPE: 0.722361
+MAE: 0.005576
+R2: 0.992873
+--------------- Config ---------------
+K: 5
+alpha: 500
+tau: 1
+DC: 1
+init: 1
+tol: 1e-05
+N: 3000
+hasResidual: True
+vmd_enable: True
+vmd_single_model: False
+single_model: cnn_bilstm
+file_name: 河北数据集.xlsx
+date_col: date
+value_col: value
+window: 24
+nrows: 0
+test_percent: 0.2
+train_percent: 0.8
+epochs: 500
+lr: 0.001
+cnn_bilstm_threshold: 0.1
+cnn_lstm_threshold: 0.05
+
+
+================================================================
+================================================================
+Timestamp: 2025-12-28 12:38:41
+--------------- Metrics ---------------
+RMSE: 0.008089
+MAPE: 0.782861
+MAE: 0.005989
+R2: 0.991901
+--------------- Config ---------------
+K: 5
+alpha: 500
+tau: 1
+DC: 1
+init: 1
+tol: 1e-05
+N: 3000
+hasResidual: False
+vmd_enable: True
+vmd_single_model: True
+single_model: cnn
+file_name: 河北数据集.xlsx
+date_col: date
+value_col: value
+window: 24
+nrows: 0
+test_percent: 0.2
+train_percent: 0.8
+epochs: 500
+lr: 0.001
+cnn_bilstm_threshold: 0.1
+cnn_lstm_threshold: 0.05
+
+
+================================================================
+================================================================
+Timestamp: 2025-12-28 12:41:38
+--------------- Metrics ---------------
+RMSE: 0.011780
+MAPE: 1.193397
+MAE: 0.009059
+R2: 0.982821
+--------------- Config ---------------
+K: 4
+alpha: 500
+tau: 1
+DC: 1
+init: 1
+tol: 1e-05
+N: 3000
+hasResidual: False
+vmd_enable: True
+vmd_single_model: True
+single_model: cnn
+file_name: 河北数据集.xlsx
+date_col: date
+value_col: value
+window: 24
+nrows: 0
+test_percent: 0.2
+train_percent: 0.8
+epochs: 500
+lr: 0.001
+cnn_bilstm_threshold: 0.1
+cnn_lstm_threshold: 0.05
+
+
+================================================================
+================================================================
+Timestamp: 2025-12-28 12:47:24
+--------------- Metrics ---------------
+RMSE: 0.008169
+MAPE: 0.803629
+MAE: 0.006170
+R2: 0.991739
+--------------- Config ---------------
+K: 4
+alpha: 500
+tau: 1
+DC: 1
+init: 1
+tol: 1e-05
+N: 3000
+hasResidual: True
+vmd_enable: True
+vmd_single_model: False
+single_model: cnn
+file_name: 河北数据集.xlsx
+date_col: date
+value_col: value
+window: 24
+nrows: 0
+test_percent: 0.2
+train_percent: 0.8
+epochs: 500
+lr: 0.001
+cnn_bilstm_threshold: 0.1
+cnn_lstm_threshold: 0.05
+
+
+================================================================
+================================================================
+Timestamp: 2025-12-28 12:56:29
+--------------- Metrics ---------------
+RMSE: 0.012222
+MAPE: 1.226639
+MAE: 0.009340
+R2: 0.981508
+--------------- Config ---------------
+K: 4
+alpha: 500
+tau: 1
+DC: 1
+init: 1
+tol: 1e-05
+N: 3000
+hasResidual: False
+vmd_enable: True
+vmd_single_model: True
+single_model: lstm
+file_name: 河北数据集.xlsx
+date_col: date
+value_col: value
+window: 24
+nrows: 0
+test_percent: 0.2
+train_percent: 0.8
+epochs: 500
+lr: 0.001
+cnn_bilstm_threshold: 0.1
+cnn_lstm_threshold: 0.05
+
+
+================================================================
+================================================================
+Timestamp: 2025-12-28 13:01:25
+--------------- Metrics ---------------
+RMSE: 0.012502
+MAPE: 1.264646
+MAE: 0.009697
+R2: 0.980651
+--------------- Config ---------------
+K: 4
+alpha: 500
+tau: 1
+DC: 1
+init: 1
+tol: 1e-05
+N: 3000
+hasResidual: False
+vmd_enable: True
+vmd_single_model: True
+single_model: cnn_lstm
+file_name: 河北数据集.xlsx
+date_col: date
+value_col: value
+window: 24
+nrows: 0
+test_percent: 0.2
+train_percent: 0.8
+epochs: 500
+lr: 0.001
+cnn_bilstm_threshold: 0.1
+cnn_lstm_threshold: 0.05
+
+
+================================================================
+================================================================
+Timestamp: 2025-12-28 13:09:26
+--------------- Metrics ---------------
+RMSE: 0.012414
+MAPE: 1.260140
+MAE: 0.009585
+R2: 0.980923
+--------------- Config ---------------
+K: 4
+alpha: 500
+tau: 1
+DC: 1
+init: 1
+tol: 1e-05
+N: 3000
+hasResidual: False
+vmd_enable: True
+vmd_single_model: True
+single_model: cnn_bilstm
+file_name: 河北数据集.xlsx
+date_col: date
+value_col: value
+window: 24
+nrows: 0
+test_percent: 0.2
+train_percent: 0.8
+epochs: 500
+lr: 0.001
+cnn_bilstm_threshold: 0.1
+cnn_lstm_threshold: 0.05
+
+
+================================================================
+================================================================
+Timestamp: 2025-12-28 13:14:02
+--------------- Metrics ---------------
+RMSE: 0.030070
+MAPE: 2.973234
+MAE: 0.022661
+R2: 0.888070
+--------------- Config ---------------
+K: 4
+alpha: 500
+tau: 1
+DC: 1
+init: 1
+tol: 1e-05
+N: 3000
+hasResidual: False
+vmd_enable: False
+vmd_single_model: True
+single_model: cnn
+file_name: 河北数据集.xlsx
+date_col: date
+value_col: value
+window: 24
+nrows: 0
+test_percent: 0.2
+train_percent: 0.8
+epochs: 500
+lr: 0.001
+cnn_bilstm_threshold: 0.1
+cnn_lstm_threshold: 0.05
+
+
+================================================================
+================================================================
+Timestamp: 2025-12-28 13:20:18
+--------------- Metrics ---------------
+RMSE: 0.031686
+MAPE: 2.908695
+MAE: 0.022677
+R2: 0.875718
+--------------- Config ---------------
+K: 4
+alpha: 500
+tau: 1
+DC: 1
+init: 1
+tol: 1e-05
+N: 3000
+hasResidual: False
+vmd_enable: False
+vmd_single_model: True
+single_model: lstm
+file_name: 河北数据集.xlsx
+date_col: date
+value_col: value
+window: 24
+nrows: 0
+test_percent: 0.2
+train_percent: 0.8
+epochs: 500
+lr: 0.001
+cnn_bilstm_threshold: 0.1
+cnn_lstm_threshold: 0.05
+
+
+================================================================
+================================================================
+Timestamp: 2025-12-28 13:54:19
+--------------- Metrics ---------------
+RMSE: 0.029308
+MAPE: 2.805800
+MAE: 0.021545
+R2: 0.893674
+--------------- Config ---------------
+K: 4
+alpha: 500
+tau: 1
+DC: 1
+init: 1
+tol: 1e-05
+N: 3000
+hasResidual: False
+vmd_enable: False
+vmd_single_model: True
+single_model: cnn
+file_name: 河北数据集.xlsx
+date_col: date
+value_col: value
+window: 24
+nrows: 0
+test_percent: 0.2
+train_percent: 0.8
+epochs: 500
+lr: 0.001
+cnn_bilstm_threshold: 0.1
+cnn_lstm_threshold: 0.05
+
+
+================================================================
+================================================================
+Timestamp: 2025-12-28 13:56:17
+--------------- Metrics ---------------
+RMSE: 0.032970
+MAPE: 3.157660
+MAE: 0.024476
+R2: 0.865442
+--------------- Config ---------------
+K: 4
+alpha: 500
+tau: 1
+DC: 1
+init: 1
+tol: 1e-05
+N: 3000
+hasResidual: False
+vmd_enable: False
+vmd_single_model: True
+single_model: cnn_lstm
+file_name: 河北数据集.xlsx
+date_col: date
+value_col: value
+window: 24
+nrows: 0
+test_percent: 0.2
+train_percent: 0.8
+epochs: 500
+lr: 0.001
+cnn_bilstm_threshold: 0.1
+cnn_lstm_threshold: 0.05
+
+
+================================================================
+================================================================
+Timestamp: 2025-12-28 14:01:06
+--------------- Metrics ---------------
+RMSE: 0.034735
+MAPE: 3.395352
+MAE: 0.026332
+R2: 0.850647
+--------------- Config ---------------
+K: 4
+alpha: 500
+tau: 1
+DC: 1
+init: 1
+tol: 1e-05
+N: 3000
+hasResidual: False
+vmd_enable: False
+vmd_single_model: True
+single_model: cnn_bilstm
+file_name: 河北数据集.xlsx
+date_col: date
+value_col: value
+window: 24
+nrows: 0
+test_percent: 0.2
+train_percent: 0.8
+epochs: 500
+lr: 0.001
+cnn_bilstm_threshold: 0.1
+cnn_lstm_threshold: 0.05
+
+
+================================================================
+================================================================
+Timestamp: 2025-12-28 14:07:33
+--------------- Metrics ---------------
+RMSE: 0.007686
+MAPE: 0.937402
+MAE: 0.005696
+R2: 0.996328
+--------------- Config ---------------
+K: 4
+alpha: 500
+tau: 1
+DC: 1
+init: 1
+tol: 1e-05
+N: 3000
+hasResidual: True
+vmd_enable: True
+vmd_single_model: False
+single_model: cnn
+file_name: 河南数据集.xlsx
+date_col: date
+value_col: value
+window: 24
+nrows: 0
+test_percent: 0.2
+train_percent: 0.8
+epochs: 500
+lr: 0.001
+cnn_bilstm_threshold: 0.1
+cnn_lstm_threshold: 0.05
+
+
+================================================================
+================================================================
+Timestamp: 2025-12-28 14:12:10
+--------------- Metrics ---------------
+RMSE: 0.008327
+MAPE: 1.049469
+MAE: 0.006338
+R2: 0.995689
+--------------- Config ---------------
+K: 4
+alpha: 500
+tau: 1
+DC: 1
+init: 1
+tol: 1e-05
+N: 3000
+hasResidual: False
+vmd_enable: True
+vmd_single_model: True
+single_model: cnn
+file_name: 河南数据集.xlsx
+date_col: date
+value_col: value
+window: 24
+nrows: 0
+test_percent: 0.2
+train_percent: 0.8
+epochs: 500
+lr: 0.001
+cnn_bilstm_threshold: 0.1
+cnn_lstm_threshold: 0.05
+
+
+================================================================
+================================================================
+Timestamp: 2025-12-28 14:16:34
+--------------- Metrics ---------------
+RMSE: 0.005305
+MAPE: 0.722230
+MAE: 0.004061
+R2: 0.998250
+--------------- Config ---------------
+K: 7
+alpha: 500
+tau: 1
+DC: 1
+init: 1
+tol: 1e-05
+N: 3000
+hasResidual: False
+vmd_enable: True
+vmd_single_model: True
+single_model: cnn
+file_name: 河南数据集.xlsx
+date_col: date
+value_col: value
+window: 24
+nrows: 0
+test_percent: 0.2
+train_percent: 0.8
+epochs: 500
+lr: 0.001
+cnn_bilstm_threshold: 0.1
+cnn_lstm_threshold: 0.05
+
+
+================================================================
+================================================================
+Timestamp: 2025-12-28 14:22:10
+--------------- Metrics ---------------
+RMSE: 0.004691
+MAPE: 0.585534
+MAE: 0.003424
+R2: 0.998632
+--------------- Config ---------------
+K: 7
+alpha: 500
+tau: 1
+DC: 1
+init: 1
+tol: 1e-05
+N: 3000
+hasResidual: False
+vmd_enable: True
+vmd_single_model: True
+single_model: lstm
+file_name: 河南数据集.xlsx
+date_col: date
+value_col: value
+window: 24
+nrows: 0
+test_percent: 0.2
+train_percent: 0.8
+epochs: 500
+lr: 0.001
+cnn_bilstm_threshold: 0.1
+cnn_lstm_threshold: 0.05
+

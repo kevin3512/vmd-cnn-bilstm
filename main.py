@@ -47,17 +47,33 @@ def create_dataset(series, window=Config.window):
 
 
 def select_model(imf, window):
-    std = np.std(imf)
 
-    if std > Config.cnn_bilstm_threshold:
-        print(f"选择 CNN-BiLSTM 模型，IMF 标准差: {std:.4f}")
-        return CNN_BiLSTM(window)
-    elif std > Config.cnn_lstm_threshold:
-        print(f"选择 CNN-LSTM 模型，IMF 标准差: {std:.4f}")
-        return CNN_LSTM(window)
-    else:
-        print(f"选择 CNN 模型，IMF 标准差: {std:.4f}")
-        return CNN(window)
+    if Config.vmd_single_model:  #只使用单个模型进行预测
+        if Config.single_model == "cnn":
+            print(f"选择单个 CNN 模型")
+            return CNN(window)
+        elif Config.single_model == "lstm":
+            print(f"选择单个 LSTM 模型")
+            return LSTM(window)
+        elif Config.single_model == "cnn_lstm":
+            print(f"选择单个 CNN-LSTM 模型")
+            return CNN_LSTM(window)
+        elif Config.single_model == "cnn_bilstm":
+            print(f"选择单个 CNN-BiLSTM 模型")
+            return CNN_BiLSTM(window)
+        else:
+            raise ValueError(f"Unsupported single_model: {Config.single_model}")
+    else:  #根据阈值选择模型
+        std = np.std(imf)
+        if std > Config.cnn_bilstm_threshold:
+            print(f"选择 CNN-BiLSTM 模型，IMF 标准差: {std:.4f}")
+            return CNN_BiLSTM(window)
+        elif std > Config.cnn_lstm_threshold:
+            print(f"选择 CNN-LSTM 模型，IMF 标准差: {std:.4f}")
+            return CNN_LSTM(window)
+        else:
+            print(f"选择 CNN 模型，IMF 标准差: {std:.4f}")
+            return CNN(window)
 
 def train_and_predict(series, model, window, epochs=Config.epochs, per_imf_normalize=False, batch_size=32, loss_type='mse'):
     """
