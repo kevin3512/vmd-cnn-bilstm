@@ -58,6 +58,11 @@ def vmd_decompose(
     aligned_imfs = np.array(aligned_imfs)
 
     # Append residual as the last IMF
-    imfs_with_residual = np.vstack([aligned_imfs, residual])
+    if(Config.hasResidual):
+        print("Adding residual IMF as the last component.")
+        imfs_with_residual = np.vstack([aligned_imfs, residual])
+    else:
+        print("Not adding residual IMF.")
+        imfs_with_residual = aligned_imfs
 
     return imfs_with_residual

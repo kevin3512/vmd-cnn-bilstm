@@ -3,7 +3,7 @@ import numpy as np
 from sklearn.preprocessing import MinMaxScaler
 import torch
 import torch.nn as nn
-from cnn import CNN, CNN_LSTM, CNN_BiLSTM, TCN
+from cnn import CNN, CNN_LSTM, CNN_BiLSTM, TCN, LSTM
 import matplotlib.pyplot as plt
 from config import Config
 import matplotlib.pyplot as plt
@@ -230,6 +230,7 @@ def vmd_cnn_bilstm_pipeline(file_path):
             model = TCN(window)
             print(f"IMF-{idx+1}: 使用 TCN 模型预测")
         else:
+            print(f"IMF-{idx+1}: 模型选择如下：")
             model = select_model(imf, window)
 
         # 对每个 IMF 先做去均值标准化再训练（防止不同 IMF 幅度差异导致偏差）
@@ -252,7 +253,36 @@ def vmd_cnn_bilstm_pipeline(file_path):
 
     return y_true, final_pred, loss_records
 
+def no_cmd_pipeline(file_path, select_model="cnn"):
+    series, scaler = load_data(file_path)
 
+    imfs = my_vmd.vmd_decompose(series)
+    window = Config.window
+
+    predictions = []
+    loss_records = []
+
+    if(select_model == "cnn"):
+        model = CNN(window)
+    elif(select_model == "lstm"):
+        model = LSTM(window)
+    elif(select_model == "cnn_lstm"):
+        model = CNN_LSTM(window)
+    elif(select_model == "cnn_bilstm"):
+        model = CNN_BiLSTM(window)
+
+    # 对每个 IMF 先做去均值标准化再训练（防止不同 IMF 幅度差异导致偏差）
+    pred, loss_hist = train_and_predict(series, model, window, per_imf_normalize=True, batch_size=32, loss_type='huber')
+    predictions.append(pred)
+    loss_records.append(loss_hist)
+    final_pred = np.sum(predictions, axis=0)
+
+    y_true = series[-len(final_pred):]
+
+    final_pred = scaler.inverse_transform(final_pred.reshape(-1, 1)).flatten()
+    y_true = scaler.inverse_transform(y_true.reshape(-1, 1)).flatten()
+
+    return y_true, final_pred, loss_records
 
 def regression_metrics(y_true, y_pred, eps=1e-8):
     """
@@ -341,10 +371,16 @@ if __name__ == '__main__':
     #     print('VMD tuner failed:', e)
 
     # 运行 VMD-CNN-BiLSTM 模型获取预测结果
-    y_true, y_pred, loss_records = vmd_cnn_bilstm_pipeline(Config.file_name)
+    if(Config.vmd_enable):
+        print("使用 VMD-CNN-BiLSTM 组合模型进行预测...")
+        y_true, y_pred, loss_records = vmd_cnn_bilstm_pipeline(Config.file_name)
+    else:
+        print("使用单模型进行预测...")
+        y_true, y_pred, loss_records = no_cmd_pipeline(Config.file_name, Config.single_model)
 
-    # 计算并打印回归指标
-    metrics.evaluate(y_true=y_true, y_pred=y_pred)
+    # 计算并打印保存回归指标
+    # metrics.evaluate(y_true=y_true, y_pred=y_pred)
+    metrics.save_evaluation(y_true, y_pred, filename="模型性能指标保存.txt", out_dir="result")
 
     # 绘制预测结果对比图
     plot_prediction(y_true, y_pred)

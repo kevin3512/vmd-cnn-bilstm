@@ -14,6 +14,16 @@ class CNN(nn.Module):
         x = x.view(x.size(0), -1)
         return self.fc(x)
 
+class LSTM(nn.Module):
+    def __init__(self, window):
+        super().__init__()
+        self.lstm = nn.LSTM(1, 32, batch_first=True)
+        self.fc = nn.Linear(32, 1)
+
+    def forward(self, x):
+        x = x.unsqueeze(-1)
+        _, (h, _) = self.lstm(x)
+        return self.fc(h[-1])
 
 class CNN_LSTM(nn.Module):
     def __init__(self, window):

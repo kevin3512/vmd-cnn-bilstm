@@ -1,16 +1,19 @@
 # config.py - 专门存放变量的文件
 class Config:
     # VMD参数配置
-    K=4
+    K=7
     alpha=500
     tau=1
     DC=1
     init=1
     tol=1e-05
     N=3000
+    hasResidual=True  # 是否添加残差分量作为最后一个IMF
+    vmd_enable=True  # 是否启用VMD参数调优
+    single_model = "cnn_bilstm"  # 使用单个模型预测（需要enable=False生效），可选值: "cnn", "lstm", "cnn_lstm", "cnn_bilstm", "tcn"
     
     # 数据集配置
-    file_name = "河南数据集.xlsx"
+    file_name = "河北数据集.xlsx"
     date_col = "date"
     value_col = "value"
     window = 24
