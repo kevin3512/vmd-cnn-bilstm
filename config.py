@@ -11,7 +11,7 @@ class Config:
     hasResidual=False  # 是否添加残差分量作为最后一个IMF
     vmd_enable=True  # 是否启用VMD参数调优
     vmd_single_model = True # 是否只使用单个模型进行VMD参数调优
-    single_model = "lstm"  # 使用单个模型预测（需要enable=False生效），可选值: "cnn", "lstm", "cnn_lstm", "cnn_bilstm", "tcn"
+    single_model = "rnn"  # 使用单个模型预测（需要enable=False生效），可选值: "cnn", "lstm", "cnn_lstm", "cnn_bilstm", "tcn", "rnn"
     
     # 数据集配置
     file_name = "河南数据集.xlsx"

@@ -13,6 +13,24 @@ class CNN(nn.Module):
         x = torch.relu(self.conv(x))
         x = x.view(x.size(0), -1)
         return self.fc(x)
+    
+class RNN(nn.Module):
+    def __init__(self, window, n_features=1, hidden_size=32, fc_hidden=16):
+        super().__init__()
+        # input shape expected: (batch, seq_len) or (batch, seq_len, n_features)
+        self.rnn = nn.RNN(input_size=n_features, hidden_size=hidden_size, batch_first=True, nonlinearity='tanh')
+        self.fc1 = nn.Linear(hidden_size, fc_hidden)
+        self.fc2 = nn.Linear(fc_hidden, 1)
+        self.relu = nn.ReLU()
+
+    def forward(self, x):
+        # ensure features dimension exists
+        if x.dim() == 2:
+            x = x.unsqueeze(-1)  # (batch, seq_len, 1)
+        _, h = self.rnn(x)
+        h_last = h[-1]  # (batch, hidden_size)
+        x = self.relu(self.fc1(h_last))
+        return self.fc2(x)
 
 class LSTM(nn.Module):
     def __init__(self, window):

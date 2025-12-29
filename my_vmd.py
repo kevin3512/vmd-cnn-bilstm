@@ -10,6 +10,8 @@ def vmd_decompose(
     DC=Config.DC,
     init=Config.init,
     tol=Config.tol
+    ,
+    fs=1.0  # sampling frequency in samples per unit time (default: 1.0)
 ):
     """
     VMD decomposition with explicit residual IMF.
@@ -64,5 +66,24 @@ def vmd_decompose(
     else:
         print("Not adding residual IMF.")
         imfs_with_residual = aligned_imfs
+
+    # ---- Compute and print center frequency for each IMF ----
+    # Use power spectral centroid: sum(f * P(f)) / sum(P(f)) where P is power
+    center_freqs = []
+    N = imfs_with_residual.shape[1]
+    # frequency bins for rfft
+    freqs = np.fft.rfftfreq(N, d=1.0 / fs)
+
+    for idx, imf in enumerate(imfs_with_residual):
+        # compute one-sided FFT and power
+        X = np.fft.rfft(imf)
+        P = np.abs(X) ** 2
+        total_power = P.sum()
+        if total_power <= 0:
+            cf = 0.0
+        else:
+            cf = (freqs * P).sum() / total_power
+        center_freqs.append(cf)
+        print(f"IMF {idx}: center frequency = {cf:.6f} (Hz)")
 
     return imfs_with_residual
