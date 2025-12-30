@@ -1306,3 +1306,69 @@ lr: 0.001
 cnn_bilstm_threshold: 0.1
 cnn_lstm_threshold: 0.05
 
+
+================================================================
+================================================================
+Timestamp: 2025-12-29 20:12:31
+--------------- Metrics ---------------
+RMSE: 0.006528
+MAPE: 0.846889
+MAE: 0.004954
+R2: 0.997351
+--------------- Config ---------------
+K: 7
+alpha: 500
+tau: 1
+DC: 1
+init: 1
+tol: 1e-05
+N: 3000
+hasResidual: False
+vmd_enable: True
+vmd_single_model: True
+single_model: rnn
+file_name: 河南数据集.xlsx
+date_col: date
+value_col: value
+window: 24
+nrows: 0
+test_percent: 0.2
+train_percent: 0.8
+epochs: 500
+lr: 0.001
+cnn_bilstm_threshold: 0.1
+cnn_lstm_threshold: 0.05
+
+
+================================================================
+================================================================
+Timestamp: 2025-12-29 20:31:05
+--------------- Metrics ---------------
+RMSE: 0.006981
+MAPE: 0.802091
+MAE: 0.004909
+R2: 0.996971
+--------------- Config ---------------
+K: 7
+alpha: 500
+tau: 1
+DC: 1
+init: 1
+tol: 1e-05
+N: 3000
+hasResidual: False
+vmd_enable: True
+vmd_single_model: False
+single_model: rnn
+file_name: 河南数据集.xlsx
+date_col: date
+value_col: value
+window: 24
+nrows: 0
+test_percent: 0.2
+train_percent: 0.8
+epochs: 500
+lr: 0.001
+cnn_bilstm_threshold: 0.1
+cnn_lstm_threshold: 0.05
+

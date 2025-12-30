@@ -1,0 +1,11 @@
+主要参数                设置                 备注
+split_rate           [0.8, 0.2]         训练集、测试集划分比例
+batch_zise            32                 批次量大小
+input_dim             24				输入数据维度
+output_dim            1                 输出数据维度
+conv_archs           (1,32,3)			输入通道1，输出通道32，卷积核大小3
+hidden_layer_sizes    [32, 32]          BiLSTM隐层的输入输出维度
+loss_function         mse               损失函数
+learn_rate            0.001              学习率
+optimizer             Adam               优化器
+epochs                500               训练次数
