@@ -38,13 +38,13 @@ class Config:
 
     ####################################----main_show_all.py 中的配置----#########################################
 
-    columns_to_plot = [   # 指定要绘制的列名列表,对应main.py中label的值
-        "true_value",
-        "CNN-LSTM",
-        "CNN-BiLSTM",
-        "VMD-CNN",
-        "VMD-CNN-LSTM",
-        "VMD-CNN-BiLSTM",
+    columns_to_plot = [   # 读取文件中指定的列名进行绘制
+        "TRUE_VALUE",
+        "CNN_LSTM",
+        "CNN_BILSTM",
+        "VMD_CNN",
+        "VMD_CNN_LSTM",
+        "VMD_CNN_BILSTM",
         "本文模型"
     ]
 
@@ -58,8 +58,6 @@ class Config:
 
 
     ####################################----main.py 中的配置----####################################
-
-    label = "CNN-LSTM"  # 当前运行模型的标签，用于结果保存时区分不同模型， 可选值："CNN-LSTM", "CNN-BiLSTM", "VMD-CNN", "VMD-LSTM", "VMD-CNN-LSTM", "VMD-CNN-BiLSTM", "本文模型"
     model_predict_file = "result/模型运行结果.xlsx"  # 模型预测结果保存文件名
 
     # VMD参数配置
@@ -70,22 +68,22 @@ class Config:
     init=1
     tol=1e-05
     N=3000
-    hasResidual=False  # 是否添加残差分量作为最后一个IMF
+    hasResidual=True  # 是否添加残差分量作为最后一个IMF
     vmd_enable=True  # 是否启用VMD参数调优
-    vmd_single_model = True # 是否只使用单个模型进行VMD参数调优
-    single_model = "cnn_lstm"  # 使用单个模型预测（需要enable=False生效），可选值: "cnn", "lstm", "cnn_lstm", "cnn_bilstm", "tcn", "rnn"
+    vmd_single_model = False # 是否只使用单个模型进行VMD参数调优
+    single_model = "cnn_bilstm"  # 使用单个模型预测（需要enable=False生效），可选值: "cnn", "lstm", "cnn_lstm", "cnn_bilstm", "tcn", "rnn"
     
     # 数据集配置
     file_name = "河北数据集.xlsx"
     date_col = "date"
     value_col = "value"
     window = 24
-    nrows = 0   # 设为0表示所有行
+    nrows = 500   # 设为0表示所有行
     test_percent = 0.2
     train_percent = 0.8
 
     # 训练配置
-    epochs = 500
+    epochs = 100
     lr = 0.001   #学习率
 
     #模型选择

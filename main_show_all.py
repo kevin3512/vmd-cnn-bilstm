@@ -1,36 +1,57 @@
-    
-
 import os
-from matplotlib import pyplot as plt
 import pandas as pd
-import metrics
+import matplotlib.pyplot as plt
 from config import Config
+import metrics
+import numpy as np
+
+
 
 plt.rcParams['font.sans-serif'] = ['SimHei']   # 中文
 plt.rcParams['axes.unicode_minus'] = False     # 负号
 
-
-def show_all_models_pred(file_name, first_row_list):
-    """
-    读取 Excel 中指定列并绘制预测结果
-    :param file_name: Excel 文件名
-    :param first_row_list: 需要绘制的列名列表
-    """
+def show_all_models_pred(
+        file_name,
+        sheet_name,
+        true_col="TRUE_VALUE"
+):
     if not os.path.exists(file_name):
         raise FileNotFoundError(f"{file_name} 不存在")
 
-    df = pd.read_excel(file_name)
+    df = pd.read_excel(file_name, sheet_name=sheet_name)
+
+    if true_col not in df.columns:
+        raise ValueError(f"真实值列 '{true_col}' 不存在")
 
     plt.figure(figsize=(12, 6))
 
-    for col in first_row_list:
-        if col not in df.columns:
-            print(f"⚠️ 警告：列 '{col}' 不存在，已跳过")
+    # 先画真实值
+    y_true_full = df[true_col].values
+    plt.plot(y_true_full, label=true_col, linewidth=2)
+
+    for col in df.columns:
+        if col == true_col:
             continue
-        plt.plot(df[col], label=col)
-        if col != "true_value":
-            print(f"\n\n\n\n\n模型 '{col}' 性能指标:")
-            metrics.evaluate(y_true=df["true_value"], y_pred=df[col])
+
+        y_pred = df[col]
+
+        # 有效索引（同时非 NaN）
+        valid_mask = (~pd.isna(y_pred)) & (~pd.isna(df[true_col]))
+
+        if valid_mask.sum() == 0:
+            print(f"⚠️ 列 '{col}' 无有效数据，跳过")
+            continue
+
+        y_true = df.loc[valid_mask, true_col].values
+        y_pred = df.loc[valid_mask, col].values
+
+        plt.plot(
+            np.where(valid_mask, df[col], np.nan),
+            label=col
+        )
+
+        print(f"模型 '{col}' 性能指标:")
+        metrics.evaluate(y_true, y_pred)
 
     plt.xlabel("时间步 / 样本点")
     plt.ylabel("预测值")
@@ -42,5 +63,5 @@ def show_all_models_pred(file_name, first_row_list):
 
 if __name__ == '__main__':
     # 指定要绘制的列名列表
-    
-    show_all_models_pred(Config.model_predict_file, Config.columns_to_plot)
+
+    show_all_models_pred(Config.model_predict_file, '模型预测值')

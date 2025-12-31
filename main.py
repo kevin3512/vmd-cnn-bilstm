@@ -10,8 +10,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 import matplotlib.pyplot as plt
 import os
-import my_vmd
 import metrics
+import my_vmd
+from metrics import evaluate
 
 
 
@@ -379,42 +380,112 @@ def delete_all_png_files():
     print(f"总共删除了 {png_count} 个 .png 文件")
 
 
-def save_pred_to_file(pred, file_name="模型运行结果.xlsx", first_row=None):
-    """
-    将预测结果追加写入 Excel 文件（按列追加）
-    :param pred: 预测值（一维 list / ndarray / Series）
-    :param file_name: Excel 文件名
-    :param first_row: 第一行的列名（模型名）
-    """
-    if first_row is None:
-        raise ValueError("first_row 不能为空，用于标识该列的模型名称")
 
-    # 转为一维 Series
-    pred_series = pd.Series(pred, name=first_row)
 
-    # 文件不存在：直接创建
+def read_column_from_sheet(file_name, sheet_name, col_name):
+    df = pd.read_excel(file_name, sheet_name=sheet_name)
+    if col_name not in df.columns:
+        raise ValueError(f"Sheet [{sheet_name}] 中不存在列 [{col_name}]")
+    return df[col_name].dropna().values
+
+
+def save_pred_and_metrics_to_file(
+        y_true,
+        y_pred,
+        model_name,
+        file_name="模型运行结果.xlsx",
+        pred_sheet="模型预测值",
+        metrics_sheet="模型指标",
+        y_true_col="TRUE_VALUE"
+):
+    """
+    - y_true / y_pred 只要有一个非 None，就保存到“模型预测值”
+    - 只有当 y_true 和 y_pred 都非 None 时，才计算并保存指标
+    """
+
+    # ================== 1. 准备要写入的列 ==================
+    if y_pred is not None:
+        series_to_write = pd.Series(y_pred, name=model_name)
+    elif y_true is not None:
+        series_to_write = pd.Series(y_true, name=model_name)
+    else:
+        raise ValueError("y_true 和 y_pred 不能同时为 None")
+
+    # ================== 2. 写入 / 追加预测值 Sheet ==================
     if not os.path.exists(file_name):
-        df = pd.DataFrame({first_row: pred_series})
-        df.to_excel(file_name, index=False)
-        print(f"新建文件并写入：{file_name}")
-        return
+        with pd.ExcelWriter(file_name, engine="openpyxl") as writer:
+            pd.DataFrame({model_name: series_to_write}).to_excel(
+                writer, sheet_name=pred_sheet, index=False
+            )
+        print(f"新建文件，写入列：{model_name}")
+    else:
+        with pd.ExcelWriter(
+                file_name,
+                engine="openpyxl",
+                mode="a",
+                if_sheet_exists="overlay"
+        ) as writer:
 
-    # 文件存在：追加列
-    df_old = pd.read_excel(file_name)
+            try:
+                df_old = pd.read_excel(file_name, sheet_name=pred_sheet)
+            except ValueError:
+                df_old = pd.DataFrame()
 
-    if first_row in df_old.columns:
-        raise ValueError(f"列名 '{first_row}' 已存在，请使用不同的 first_row")
+            if model_name in df_old.columns:
+                raise ValueError(f"列 [{model_name}] 已存在")
 
-    # 对齐长度（防止长度不同报错）
-    max_len = max(len(df_old), len(pred_series))
-    df_old = df_old.reindex(range(max_len))
-    pred_series = pred_series.reindex(range(max_len))
+            max_len = max(len(df_old), len(series_to_write))
+            df_old = df_old.reindex(range(max_len))
+            series_to_write = series_to_write.reindex(range(max_len))
 
-    df_old[first_row] = pred_series
-    df_old.to_excel(file_name, index=False)
+            df_old[model_name] = series_to_write
+            df_old.to_excel(writer, sheet_name=pred_sheet, index=False)
 
-    print(f"已追加写入模型结果：{first_row}")
+            print(f"已写入预测值列：{model_name}")
 
+    # ================== 3. 指标计算（严格条件） ==================
+    if y_true is not None and y_pred is not None:
+        # y_true 从 sheet 中读取（以 y_true_col 为准）
+        y_true_from_sheet = read_column_from_sheet(
+            file_name, pred_sheet, y_true_col
+        )
+
+        if len(y_true_from_sheet) != len(y_pred):
+            raise ValueError("y_true 与 y_pred 长度不一致")
+
+        metrics = evaluate(y_true_from_sheet, y_pred)
+        metrics_df_new = pd.DataFrame(metrics, index=[model_name])
+
+        try:
+            df_metrics_old = pd.read_excel(
+                file_name, sheet_name=metrics_sheet, index_col=0
+            )
+        except ValueError:
+            df_metrics_old = pd.DataFrame()
+
+        df_metrics_all = pd.concat([df_metrics_old, metrics_df_new])
+
+        with pd.ExcelWriter(
+                file_name,
+                engine="openpyxl",
+                mode="a",
+                if_sheet_exists="replace"
+        ) as writer:
+            df_metrics_all.to_excel(writer, sheet_name=metrics_sheet)
+
+        print(f"模型 [{model_name}] 指标已计算并写入")
+    else:
+        print(f"模型 [{model_name}] 未计算指标（y_true 或 y_pred 为 None）")
+
+
+def get_model_name_from_config():
+    if Config.vmd_enable:
+        if Config.vmd_single_model:
+            return f"VMD_{Config.single_model.upper()}"
+        else:
+            return "本文模型"
+    else:
+        return Config.single_model.upper()
 
 if __name__ == '__main__':
     #删除所有.png文件
@@ -444,10 +515,11 @@ if __name__ == '__main__':
     if os.path.exists(Config.model_predict_file):
         print(f"文件 {Config.model_predict_file} 已存在, 跳过写入真实值")
     else:  # 文件创建时写入真实值
-        save_pred_to_file(y_true, file_name=Config.model_predict_file, first_row="true_value")
+        save_pred_and_metrics_to_file(y_true=y_true, y_pred=None, file_name=Config.model_predict_file, model_name="TRUE_VALUE")
+
 
     # 追加写入当前模型预测结果
-    save_pred_to_file(y_pred, file_name=Config.model_predict_file, first_row=Config.label)
+    save_pred_and_metrics_to_file(y_true=y_true, y_pred=y_pred, file_name=Config.model_predict_file, model_name= get_model_name_from_config())
     # 绘制预测结果对比图
     plot_prediction(y_true, y_pred)
     for i, loss_hist in enumerate(loss_records):
