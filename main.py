@@ -379,6 +379,42 @@ def delete_all_png_files():
     print(f"总共删除了 {png_count} 个 .png 文件")
 
 
+def save_pred_to_file(pred, file_name="模型运行结果.xlsx", first_row=None):
+    """
+    将预测结果追加写入 Excel 文件（按列追加）
+    :param pred: 预测值（一维 list / ndarray / Series）
+    :param file_name: Excel 文件名
+    :param first_row: 第一行的列名（模型名）
+    """
+    if first_row is None:
+        raise ValueError("first_row 不能为空，用于标识该列的模型名称")
+
+    # 转为一维 Series
+    pred_series = pd.Series(pred, name=first_row)
+
+    # 文件不存在：直接创建
+    if not os.path.exists(file_name):
+        df = pd.DataFrame({first_row: pred_series})
+        df.to_excel(file_name, index=False)
+        print(f"新建文件并写入：{file_name}")
+        return
+
+    # 文件存在：追加列
+    df_old = pd.read_excel(file_name)
+
+    if first_row in df_old.columns:
+        raise ValueError(f"列名 '{first_row}' 已存在，请使用不同的 first_row")
+
+    # 对齐长度（防止长度不同报错）
+    max_len = max(len(df_old), len(pred_series))
+    df_old = df_old.reindex(range(max_len))
+    pred_series = pred_series.reindex(range(max_len))
+
+    df_old[first_row] = pred_series
+    df_old.to_excel(file_name, index=False)
+
+    print(f"已追加写入模型结果：{first_row}")
+
 
 if __name__ == '__main__':
     #删除所有.png文件
@@ -404,7 +440,14 @@ if __name__ == '__main__':
     # 计算并打印保存回归指标
     # metrics.evaluate(y_true=y_true, y_pred=y_pred)
     metrics.save_evaluation(y_true, y_pred, filename="模型性能指标保存.txt", out_dir="result")
+    
+    if os.path.exists(Config.model_predict_file):
+        print(f"文件 {Config.model_predict_file} 已存在, 跳过写入真实值")
+    else:  # 文件创建时写入真实值
+        save_pred_to_file(y_true, file_name=Config.model_predict_file, first_row="true_value")
 
+    # 追加写入当前模型预测结果
+    save_pred_to_file(y_pred, file_name=Config.model_predict_file, first_row=Config.label)
     # 绘制预测结果对比图
     plot_prediction(y_true, y_pred)
     for i, loss_hist in enumerate(loss_records):

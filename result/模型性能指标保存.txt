@@ -1372,3 +1372,114 @@ lr: 0.001
 cnn_bilstm_threshold: 0.1
 cnn_lstm_threshold: 0.05
 
+
+================================================================
+================================================================
+Timestamp: 2025-12-31 16:28:57
+--------------- Metrics ---------------
+RMSE: 0.011408
+MAPE: 0.973016
+MAE: 0.007094
+R2: 0.985283
+--------------- Config ---------------
+RUN_COMPARE: True
+compare_models: [{'label': '组合模型:CNN-LSTM', 'vmd_enable': False, 'vmd_single_model': True, 'single_model': 'cnn_lstm'}, {'label': '组合模型:CNN-BiLSTM', 'vmd_enable': False, 'vmd_single_model': True, 'single_model': 'cnn_bilstm'}, {'label': 'VMD模型:CNN', 'vmd_enable': True, 'vmd_single_model': True, 'single_model': 'cnn'}, {'label': 'VMD模型:CNN-LSTM', 'vmd_enable': True, 'vmd_single_model': True, 'single_model': 'cnn_lstm'}, {'label': 'VMD模型:CNN-BiLSTM', 'vmd_enable': True, 'vmd_single_model': True, 'single_model': 'cnn_bilstm'}, {'label': '本文模型', 'vmd_enable': True, 'vmd_single_model': False, 'single_model': ''}]
+label: CNN-LSTM
+model_predict_file: 模型运行结果.xlsx
+K: 7
+alpha: 500
+tau: 1
+DC: 1
+init: 1
+tol: 1e-05
+N: 3000
+hasResidual: False
+vmd_enable: True
+vmd_single_model: True
+single_model: cnn_lstm
+file_name: 河北数据集.xlsx
+date_col: date
+value_col: value
+window: 24
+nrows: 500
+test_percent: 0.2
+train_percent: 0.8
+epochs: 100
+lr: 0.001
+cnn_bilstm_threshold: 0.1
+cnn_lstm_threshold: 0.05
+
+
+================================================================
+================================================================
+Timestamp: 2025-12-31 16:32:25
+--------------- Metrics ---------------
+RMSE: 0.011217
+MAPE: 0.967961
+MAE: 0.007128
+R2: 0.985772
+--------------- Config ---------------
+RUN_COMPARE: True
+compare_models: [{'label': '组合模型:CNN-LSTM', 'vmd_enable': False, 'vmd_single_model': True, 'single_model': 'cnn_lstm'}, {'label': '组合模型:CNN-BiLSTM', 'vmd_enable': False, 'vmd_single_model': True, 'single_model': 'cnn_bilstm'}, {'label': 'VMD模型:CNN', 'vmd_enable': True, 'vmd_single_model': True, 'single_model': 'cnn'}, {'label': 'VMD模型:CNN-LSTM', 'vmd_enable': True, 'vmd_single_model': True, 'single_model': 'cnn_lstm'}, {'label': 'VMD模型:CNN-BiLSTM', 'vmd_enable': True, 'vmd_single_model': True, 'single_model': 'cnn_bilstm'}, {'label': '本文模型', 'vmd_enable': True, 'vmd_single_model': False, 'single_model': ''}]
+label: CNN-BiLSTM
+model_predict_file: 模型运行结果.xlsx
+K: 7
+alpha: 500
+tau: 1
+DC: 1
+init: 1
+tol: 1e-05
+N: 3000
+hasResidual: False
+vmd_enable: True
+vmd_single_model: True
+single_model: cnn_lstm
+file_name: 河北数据集.xlsx
+date_col: date
+value_col: value
+window: 24
+nrows: 500
+test_percent: 0.2
+train_percent: 0.8
+epochs: 100
+lr: 0.001
+cnn_bilstm_threshold: 0.1
+cnn_lstm_threshold: 0.05
+
+
+================================================================
+================================================================
+Timestamp: 2025-12-31 16:33:40
+--------------- Metrics ---------------
+RMSE: 0.012334
+MAPE: 0.942132
+MAE: 0.006974
+R2: 0.982797
+--------------- Config ---------------
+RUN_COMPARE: True
+compare_models: [{'label': '组合模型:CNN-LSTM', 'vmd_enable': False, 'vmd_single_model': True, 'single_model': 'cnn_lstm'}, {'label': '组合模型:CNN-BiLSTM', 'vmd_enable': False, 'vmd_single_model': True, 'single_model': 'cnn_bilstm'}, {'label': 'VMD模型:CNN', 'vmd_enable': True, 'vmd_single_model': True, 'single_model': 'cnn'}, {'label': 'VMD模型:CNN-LSTM', 'vmd_enable': True, 'vmd_single_model': True, 'single_model': 'cnn_lstm'}, {'label': 'VMD模型:CNN-BiLSTM', 'vmd_enable': True, 'vmd_single_model': True, 'single_model': 'cnn_bilstm'}, {'label': '本文模型', 'vmd_enable': True, 'vmd_single_model': False, 'single_model': ''}]
+label: CNN-BiLSTM
+model_predict_file: result/模型运行结果.xlsx
+K: 7
+alpha: 500
+tau: 1
+DC: 1
+init: 1
+tol: 1e-05
+N: 3000
+hasResidual: False
+vmd_enable: True
+vmd_single_model: True
+single_model: cnn_lstm
+file_name: 河北数据集.xlsx
+date_col: date
+value_col: value
+window: 24
+nrows: 500
+test_percent: 0.2
+train_percent: 0.8
+epochs: 100
+lr: 0.001
+cnn_bilstm_threshold: 0.1
+cnn_lstm_threshold: 0.05
+

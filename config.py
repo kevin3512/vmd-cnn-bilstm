@@ -1,5 +1,7 @@
 # config.py - 专门存放变量的文件
 class Config:
+    ####################################----main_run_all.py 中的配置----####################################
+
     # 多个模型对比试验
     RUN_COMPARE = True  # 改为 True 来运行多模型放到一起对比
     # 实验一：多个单模型和本文模型对比
@@ -25,6 +27,40 @@ class Config:
             {"label":"VMD模型:CNN-BiLSTM", "vmd_enable": True, "vmd_single_model": True, "single_model":"cnn_bilstm"},
             {"label":"本文模型", "vmd_enable": True, "vmd_single_model": False, "single_model":""}
         ]
+    
+    ############################################################################################################
+
+
+
+
+
+
+
+    ####################################----main_show_all.py 中的配置----#########################################
+
+    columns_to_plot = [   # 指定要绘制的列名列表,对应main.py中label的值
+        "true_value",
+        "CNN-LSTM",
+        "CNN-BiLSTM",
+        "VMD-CNN",
+        "VMD-CNN-LSTM",
+        "VMD-CNN-BiLSTM",
+        "本文模型"
+    ]
+
+    ############################################################################################################
+
+
+
+
+
+
+
+
+    ####################################----main.py 中的配置----####################################
+
+    label = "CNN-LSTM"  # 当前运行模型的标签，用于结果保存时区分不同模型， 可选值："CNN-LSTM", "CNN-BiLSTM", "VMD-CNN", "VMD-LSTM", "VMD-CNN-LSTM", "VMD-CNN-BiLSTM", "本文模型"
+    model_predict_file = "result/模型运行结果.xlsx"  # 模型预测结果保存文件名
 
     # VMD参数配置
     K=7
@@ -36,25 +72,26 @@ class Config:
     N=3000
     hasResidual=False  # 是否添加残差分量作为最后一个IMF
     vmd_enable=True  # 是否启用VMD参数调优
-    vmd_single_model = False # 是否只使用单个模型进行VMD参数调优
-    single_model = "rnn"  # 使用单个模型预测（需要enable=False生效），可选值: "cnn", "lstm", "cnn_lstm", "cnn_bilstm", "tcn", "rnn"
+    vmd_single_model = True # 是否只使用单个模型进行VMD参数调优
+    single_model = "cnn_lstm"  # 使用单个模型预测（需要enable=False生效），可选值: "cnn", "lstm", "cnn_lstm", "cnn_bilstm", "tcn", "rnn"
     
     # 数据集配置
-    file_name = "河南数据集.xlsx"
+    file_name = "河北数据集.xlsx"
     date_col = "date"
     value_col = "value"
     window = 24
-    nrows = 500   # 设为0表示所有行
+    nrows = 0   # 设为0表示所有行
     test_percent = 0.2
     train_percent = 0.8
 
     # 训练配置
-    epochs = 100
+    epochs = 500
     lr = 0.001   #学习率
 
     #模型选择
     cnn_bilstm_threshold = 0.1 #如：大于0.15选择CNN-BiLSTM
     cnn_lstm_threshold = 0.05  #如：大于0.05选择CNN-LSTM
 
+    ############################################################################################################
     
     
