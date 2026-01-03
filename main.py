@@ -458,8 +458,12 @@ def save_pred_and_metrics_to_file(
     df_old[model_name] = series_to_write
 
     # 写回（替换整个 sheet，保证行为可预期）
-    with pd.ExcelWriter(file_name, engine="openpyxl", mode="a" if os.path.exists(file_name) else "w", if_sheet_exists="replace") as writer:
-        df_old.to_excel(writer, sheet_name=pred_sheet, index=False)
+    if os.path.exists(file_name):
+        with pd.ExcelWriter(file_name, engine="openpyxl", mode="a", if_sheet_exists="replace") as writer:
+            df_old.to_excel(writer, sheet_name=pred_sheet, index=False)
+    else:
+        with pd.ExcelWriter(file_name, engine="openpyxl", mode="w") as writer:
+            df_old.to_excel(writer, sheet_name=pred_sheet, index=False)
 
     print(f"已写入/覆盖预测值列：{model_name}")
 
@@ -477,12 +481,17 @@ def save_pred_and_metrics_to_file(
         except ValueError:
             df_metrics_old = pd.DataFrame()
 
-        # 覆盖或新增行
-        df_metrics_old.loc[model_name] = metrics_df_new.loc[model_name]
+        # 覆盖或新增行：先移除已有同名行（若存在），再 concat 新行，避免在空 DataFrame 上直接赋值时报错
+        df_metrics_old = df_metrics_old.drop(index=model_name, errors='ignore')
+        df_metrics_old = pd.concat([df_metrics_old, metrics_df_new])
 
         # 写回（替换 sheet）
-        with pd.ExcelWriter(file_name, engine="openpyxl", mode="a" if os.path.exists(file_name) else "w", if_sheet_exists="replace") as writer:
-            df_metrics_old.to_excel(writer, sheet_name=metrics_sheet)
+        if os.path.exists(file_name):
+            with pd.ExcelWriter(file_name, engine="openpyxl", mode="a", if_sheet_exists="replace") as writer:
+                df_metrics_old.to_excel(writer, sheet_name=metrics_sheet)
+        else:
+            with pd.ExcelWriter(file_name, engine="openpyxl", mode="w") as writer:
+                df_metrics_old.to_excel(writer, sheet_name=metrics_sheet)
 
         print(f"模型 [{model_name}] 指标已计算并写入（覆盖/新增）")
     else:
@@ -524,8 +533,12 @@ def save_pred_and_metrics_to_file(
         df_imf_old.loc[model_name] = row
 
         # 写回 sheet（替换原 sheet）
-        with pd.ExcelWriter(file_name, engine="openpyxl", mode="a" if os.path.exists(file_name) else "w", if_sheet_exists="replace") as writer:
-            df_imf_old.to_excel(writer, sheet_name=imf_sheet_name)
+        if os.path.exists(file_name):
+            with pd.ExcelWriter(file_name, engine="openpyxl", mode="a", if_sheet_exists="replace") as writer:
+                df_imf_old.to_excel(writer, sheet_name=imf_sheet_name)
+        else:
+            with pd.ExcelWriter(file_name, engine="openpyxl", mode="w") as writer:
+                df_imf_old.to_excel(writer, sheet_name=imf_sheet_name)
 
         print(f"已写入/覆盖分频预测性能 (MAPE) 到 Sheet: {imf_sheet_name}")
 
