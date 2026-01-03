@@ -47,6 +47,25 @@ def create_dataset(series, window=Config.window):
     return np.array(X), np.array(y)
 
 
+def imf_spectral_entropy(imf, eps=1e-12):
+    """
+    Compute normalized spectral entropy of the IMF (approximately in range 0-1).
+    Higher values indicate a more complex / less predictable series.
+    Uses the power spectrum from the real FFT and normalizes entropy by log(n_bins).
+    """
+    imf = np.asarray(imf).astype(np.float64)
+    if imf.size < 2:
+        return 0.0
+    ps = np.abs(np.fft.rfft(imf))**2
+    ps_sum = ps.sum()
+    if ps_sum <= 0:
+        return 0.0
+    p = ps / (ps_sum + eps)
+    entropy = -np.sum(p * np.log(p + eps))
+    max_entropy = np.log(len(p))
+    return float(entropy / (max_entropy + eps))
+
+
 def select_model(imf, window):
 
     if Config.vmd_single_model:  #只使用单个模型进行预测
@@ -67,16 +86,17 @@ def select_model(imf, window):
             return CNN_BiLSTM(window)
         else:
             raise ValueError(f"Unsupported single_model: {Config.single_model}")
-    else:  #根据阈值选择模型
-        std = np.std(imf)
-        if std > Config.cnn_bilstm_threshold:
-            print(f"选择 CNN-BiLSTM 模型，IMF 标准差: {std:.4f}")
+    else:  # 根据 IMF 预测复杂度选择模型（谱熵）
+        complexity = imf_spectral_entropy(imf)
+        st = np.std(imf)
+        if st > Config.std_bilstm_threshold:
+            print(f"选择 CNN-BiLSTM 模型，IMF 复杂度: {complexity:.4f}， 标准差: {st:.4f}")
             return CNN_BiLSTM(window)
-        elif std > Config.cnn_lstm_threshold:
-            print(f"选择 CNN-LSTM 模型，IMF 标准差: {std:.4f}")
+        elif st > Config.std_lstm_threshold:
+            print(f"选择 CNN-LSTM 模型，IMF 复杂度: {complexity:.4f}， 标准差: {st:.4f}")
             return CNN_LSTM(window)
         else:
-            print(f"选择 CNN 模型，IMF 标准差: {std:.4f}")
+            print(f"选择 CNN 模型，IMF 复杂度: {complexity:.4f}， 标准差: {st:.4f}")
             return CNN(window)
 
 def train_and_predict(series, model, window, epochs=Config.epochs, per_imf_normalize=False, batch_size=32, loss_type='mse'):
@@ -175,6 +195,7 @@ def plot_vmd_imfs(signal, imfs, save_path=None):
         plt.show()
 
 def plot_imf_prediction(imf_true, imf_pred, imf_index, save_path=None):
+    metrics.save_imf_evaluation(imf_true, imf_pred, imf_index, filename="分频性能指标保存.txt", out_dir="result")
     plt.figure(figsize=(8, 3))
 
     plt.plot(imf_true, label="True IMF", linewidth=2)
@@ -242,6 +263,8 @@ def vmd_cnn_bilstm_pipeline(file_path):
 
     predictions = []
     loss_records = []
+    imf_preds = []
+    imf_trues = []
 
     for idx, imf in enumerate(imfs):
         # 使用单独新增的 TCN 模型来预测 IMF-1（索引 0），不替换其他 IMF 的原有选择逻辑
@@ -257,6 +280,8 @@ def vmd_cnn_bilstm_pipeline(file_path):
         pred, loss_hist = train_and_predict(imf, model, window, per_imf_normalize=True, batch_size=32, loss_type='huber')
         predictions.append(pred)
         loss_records.append(loss_hist)
+        imf_preds.append(pred)
+        imf_trues.append(imf[-len(pred):])
         plot_imf_prediction(
             imf_true=imf[-len(pred):],
             imf_pred=pred,
@@ -271,7 +296,7 @@ def vmd_cnn_bilstm_pipeline(file_path):
     final_pred = scaler.inverse_transform(final_pred.reshape(-1, 1)).flatten()
     y_true = scaler.inverse_transform(y_true.reshape(-1, 1)).flatten()
 
-    return y_true, final_pred, loss_records
+    return y_true, final_pred, loss_records, imf_preds, imf_trues
 
 def no_cmd_pipeline(file_path, select_model="cnn"):
     series, scaler = load_data(file_path)
@@ -396,11 +421,18 @@ def save_pred_and_metrics_to_file(
         file_name="模型运行结果.xlsx",
         pred_sheet="模型预测值",
         metrics_sheet="模型指标",
-        y_true_col="TRUE_VALUE"
+        y_true_col="TRUE_VALUE",
+        imf_preds=None,
+        imf_trues=None,
+        imf_sheet_name="分频预测性能"
 ):
     """
-    - y_true / y_pred 只要有一个非 None，就保存到“模型预测值”
-    - 只有当 y_true 和 y_pred 都非 None 时，才计算并保存指标
+    改造说明：
+    - 当已有结果时不再抛错，而是覆盖原有数据 (替换列/行)
+    - y_true / y_pred 只要有一个非 None，就保存到 `pred_sheet`
+    - 只有当 y_true 和 y_pred 都非 None 时，才计算并保存指标到 `metrics_sheet`
+    - 如果提供了 imf_preds（list of arrays） 和 imf_trues（list of arrays），
+      会在 `imf_sheet_name` 中保存每个 IMF 的指标（MAPE），存在则覆盖
     """
 
     # ================== 1. 准备要写入的列 ==================
@@ -411,71 +443,91 @@ def save_pred_and_metrics_to_file(
     else:
         raise ValueError("y_true 和 y_pred 不能同时为 None")
 
-    # ================== 2. 写入 / 追加预测值 Sheet ==================
-    if not os.path.exists(file_name):
-        with pd.ExcelWriter(file_name, engine="openpyxl") as writer:
-            pd.DataFrame({model_name: series_to_write}).to_excel(
-                writer, sheet_name=pred_sheet, index=False
-            )
-        print(f"新建文件，写入列：{model_name}")
-    else:
-        with pd.ExcelWriter(
-                file_name,
-                engine="openpyxl",
-                mode="a",
-                if_sheet_exists="overlay"
-        ) as writer:
+    # ================== 2. 写入 / 覆盖预测值 Sheet ==================
+    try:
+        df_old = pd.read_excel(file_name, sheet_name=pred_sheet) if os.path.exists(file_name) else pd.DataFrame()
+    except ValueError:
+        # sheet 不存在
+        df_old = pd.DataFrame()
 
-            try:
-                df_old = pd.read_excel(file_name, sheet_name=pred_sheet)
-            except ValueError:
-                df_old = pd.DataFrame()
+    max_len = max(len(df_old), len(series_to_write))
+    df_old = df_old.reindex(range(max_len))
+    series_to_write = series_to_write.reindex(range(max_len))
 
-            if model_name in df_old.columns:
-                raise ValueError(f"列 [{model_name}] 已存在")
+    # 覆盖或新增列
+    df_old[model_name] = series_to_write
 
-            max_len = max(len(df_old), len(series_to_write))
-            df_old = df_old.reindex(range(max_len))
-            series_to_write = series_to_write.reindex(range(max_len))
+    # 写回（替换整个 sheet，保证行为可预期）
+    with pd.ExcelWriter(file_name, engine="openpyxl", mode="a" if os.path.exists(file_name) else "w", if_sheet_exists="replace") as writer:
+        df_old.to_excel(writer, sheet_name=pred_sheet, index=False)
 
-            df_old[model_name] = series_to_write
-            df_old.to_excel(writer, sheet_name=pred_sheet, index=False)
+    print(f"已写入/覆盖预测值列：{model_name}")
 
-            print(f"已写入预测值列：{model_name}")
-
-    # ================== 3. 指标计算（严格条件） ==================
+    # ================== 3. 指标计算（当且仅当 y_true 和 y_pred 都非 None） ==================
     if y_true is not None and y_pred is not None:
-        # y_true 从 sheet 中读取（以 y_true_col 为准）
-        y_true_from_sheet = read_column_from_sheet(
-            file_name, pred_sheet, y_true_col
-        )
 
-        if len(y_true_from_sheet) != len(y_pred):
+        if len(y_true) != len(y_pred):
             raise ValueError("y_true 与 y_pred 长度不一致")
 
-        metrics = evaluate(y_true_from_sheet, y_pred)
+        metrics = evaluate(y_true, y_pred)
         metrics_df_new = pd.DataFrame(metrics, index=[model_name])
 
         try:
-            df_metrics_old = pd.read_excel(
-                file_name, sheet_name=metrics_sheet, index_col=0
-            )
+            df_metrics_old = pd.read_excel(file_name, sheet_name=metrics_sheet, index_col=0)
         except ValueError:
             df_metrics_old = pd.DataFrame()
 
-        df_metrics_all = pd.concat([df_metrics_old, metrics_df_new])
+        # 覆盖或新增行
+        df_metrics_old.loc[model_name] = metrics_df_new.loc[model_name]
 
-        with pd.ExcelWriter(
-                file_name,
-                engine="openpyxl",
-                mode="a",
-                if_sheet_exists="replace"
-        ) as writer:
-            df_metrics_all.to_excel(writer, sheet_name=metrics_sheet)
+        # 写回（替换 sheet）
+        with pd.ExcelWriter(file_name, engine="openpyxl", mode="a" if os.path.exists(file_name) else "w", if_sheet_exists="replace") as writer:
+            df_metrics_old.to_excel(writer, sheet_name=metrics_sheet)
 
-        print(f"模型 [{model_name}] 指标已计算并写入")
+        print(f"模型 [{model_name}] 指标已计算并写入（覆盖/新增）")
     else:
         print(f"模型 [{model_name}] 未计算指标（y_true 或 y_pred 为 None）")
+
+    # ================== 4. 分频预测性能（按 IMF 保存预测值与指标，存在则覆盖） ==================
+    if imf_preds is not None and imf_trues is not None:
+        if len(imf_preds) != len(imf_trues):
+            raise ValueError("imf_preds 与 imf_trues 长度不一致")
+
+        # 计算每个 IMF 的 MAPE（更稳健的定义，避免 y_true 中近零值导致百分比爆炸）：
+        mape_vals = {}
+        eps_local = 1e-8
+        for i, (t, p) in enumerate(zip(imf_trues, imf_preds)):
+            t_arr = np.array(t).flatten().astype(float)
+            p_arr = np.array(p).flatten().astype(float)
+            if t_arr.size == 0:
+                mape = np.nan
+            else:
+                mae = np.mean(np.abs(t_arr - p_arr))
+                denom = np.mean(np.abs(t_arr)) + eps_local
+                mape = (mae / denom) * 100.0
+            mape_vals[f"IMF{i+1}"] = float(mape)
+
+        row = pd.Series(mape_vals, name=model_name)
+
+        # 读取已存在的分频 sheet（如果有），并把本模型按行覆盖或追加
+        try:
+            df_imf_old = pd.read_excel(file_name, sheet_name=imf_sheet_name, index_col=0) if os.path.exists(file_name) else pd.DataFrame()
+        except Exception:
+            df_imf_old = pd.DataFrame()
+
+        # 合并列（保证 IMF 列顺序为 IMF1, IMF2, ...）
+        all_cols = sorted(set(df_imf_old.columns).union(row.index), key=lambda c: (int(c.replace('IMF','')) if c.startswith('IMF') and c[3:].isdigit() else c))
+        df_imf_old = df_imf_old.reindex(columns=all_cols)
+        row = row.reindex(all_cols)
+
+        # 覆盖或新增行
+        df_imf_old.loc[model_name] = row
+
+        # 写回 sheet（替换原 sheet）
+        with pd.ExcelWriter(file_name, engine="openpyxl", mode="a" if os.path.exists(file_name) else "w", if_sheet_exists="replace") as writer:
+            df_imf_old.to_excel(writer, sheet_name=imf_sheet_name)
+
+        print(f"已写入/覆盖分频预测性能 (MAPE) 到 Sheet: {imf_sheet_name}")
 
 
 def get_model_name_from_config():
@@ -503,7 +555,7 @@ if __name__ == '__main__':
     # 运行 VMD-CNN-BiLSTM 模型获取预测结果
     if(Config.vmd_enable):
         print("使用 VMD-CNN-BiLSTM 组合模型进行预测...")
-        y_true, y_pred, loss_records = vmd_cnn_bilstm_pipeline(Config.file_name)
+        y_true, y_pred, loss_records, imf_preds, imf_trues = vmd_cnn_bilstm_pipeline(Config.file_name)
     else:
         print("使用单模型进行预测...")
         y_true, y_pred, loss_records = no_cmd_pipeline(Config.file_name, Config.single_model)
@@ -519,7 +571,11 @@ if __name__ == '__main__':
 
 
     # 追加写入当前模型预测结果
-    save_pred_and_metrics_to_file(y_true=y_true, y_pred=y_pred, file_name=Config.model_predict_file, model_name= get_model_name_from_config())
+    if Config.vmd_enable:
+        save_pred_and_metrics_to_file(y_true=y_true, y_pred=y_pred, file_name=Config.model_predict_file, model_name=get_model_name_from_config(), imf_preds=imf_preds, imf_trues=imf_trues)
+    else:
+        save_pred_and_metrics_to_file(y_true=y_true, y_pred=y_pred, file_name=Config.model_predict_file, model_name=get_model_name_from_config())
+
     # 绘制预测结果对比图
     plot_prediction(y_true, y_pred)
     for i, loss_hist in enumerate(loss_records):

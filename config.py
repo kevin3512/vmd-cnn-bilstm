@@ -33,30 +33,6 @@ class Config:
 
 
 
-
-
-
-    ####################################----main_show_all.py 中的配置----#########################################
-
-    columns_to_plot = [   # 读取文件中指定的列名进行绘制
-        "TRUE_VALUE",
-        "CNN_LSTM",
-        "CNN_BILSTM",
-        "VMD_CNN",
-        "VMD_CNN_LSTM",
-        "VMD_CNN_BILSTM",
-        "本文模型"
-    ]
-
-    ############################################################################################################
-
-
-
-
-
-
-
-
     ####################################----main.py 中的配置----####################################
     model_predict_file = "result/模型运行结果.xlsx"  # 模型预测结果保存文件名
 
@@ -74,21 +50,24 @@ class Config:
     single_model = "cnn_bilstm"  # 使用单个模型预测（需要enable=False生效），可选值: "cnn", "lstm", "cnn_lstm", "cnn_bilstm", "tcn", "rnn"
     
     # 数据集配置
-    file_name = "河北数据集.xlsx"
+    file_name = "data_set/河北数据集.xlsx"
     date_col = "date"
     value_col = "value"
     window = 24
-    nrows = 500   # 设为0表示所有行
+    nrows = 0   # 设为0表示所有行
     test_percent = 0.2
     train_percent = 0.8
 
     # 训练配置
-    epochs = 100
+    epochs = 500
     lr = 0.001   #学习率
 
-    #模型选择
-    cnn_bilstm_threshold = 0.1 #如：大于0.15选择CNN-BiLSTM
-    cnn_lstm_threshold = 0.05  #如：大于0.05选择CNN-LSTM
+    # 模型选择阈值（基于 IMF 预测复杂度：谱熵，范围 0-1）
+    complexity_bilstm_threshold = 0.6  # 大于此值选择 CNN-BiLSTM
+    complexity_lstm_threshold = 0.4   # 大于此值选择 CNN-LSTM
+    # 兼容旧配置（基于标准差） - 如需改回，请使用 std_* 变量
+    std_bilstm_threshold = 0.1
+    std_lstm_threshold = 0.05
 
     ############################################################################################################
     
