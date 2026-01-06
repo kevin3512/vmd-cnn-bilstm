@@ -29,7 +29,18 @@ def show_all_models_pred(
     y_true_full = df[true_col].values
     plt.plot(y_true_full, label=true_col, linewidth=2)
 
-    for col in df.columns:
+    # 为每条曲线准备不同的虚线样式（dash lengths）
+    dash_patterns = [
+        [10, 5],
+        [2, 2],
+        [5, 1, 1, 1],
+        [1, 5],
+        [5, 2, 2, 2],
+        [10, 3, 1, 3],
+        [3, 3, 1, 3],
+    ]
+
+    for idx, col in enumerate(df.columns):
         if col == true_col:
             continue
 
@@ -45,10 +56,14 @@ def show_all_models_pred(
         y_true = df.loc[valid_mask, true_col].values
         y_pred = df.loc[valid_mask, col].values
 
-        plt.plot(
+        # 绘图：先画线再设置 dash pattern，以确保每条线都是虚线但样式不同
+        line, = plt.plot(
             np.where(valid_mask, df[col], np.nan),
+            linestyle='--',
             label=col
         )
+        pattern = dash_patterns[idx % len(dash_patterns)]
+        line.set_dashes(pattern)
 
         print(f"模型 '{col}' 性能指标:")
         metrics.evaluate(y_true, y_pred)

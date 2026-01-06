@@ -3,7 +3,7 @@ import numpy as np
 from sklearn.preprocessing import MinMaxScaler
 import torch
 import torch.nn as nn
-from cnn import CNN, CNN_LSTM, RNN, CNN_BiLSTM, TCN, LSTM
+from cnn import CNN, CNN_LSTM, RNN, BiLSTM, CNN_BiLSTM, TCN, LSTM
 import matplotlib.pyplot as plt
 from config import Config
 import matplotlib.pyplot as plt
@@ -78,6 +78,9 @@ def select_model(imf, window):
         elif Config.single_model == "lstm":
             print(f"选择单个 LSTM 模型")
             return LSTM(window)
+        elif Config.single_model == "bilstm":
+            print(f"选择单个 BiLSTM 模型")
+            return BiLSTM(window)
         elif Config.single_model == "cnn_lstm":
             print(f"选择单个 CNN-LSTM 模型")
             return CNN_LSTM(window)
@@ -315,6 +318,8 @@ def no_cmd_pipeline(file_path, select_model="cnn"):
         model = RNN(window)
     elif(select_model == "lstm"):
         model = LSTM(window)
+    elif(select_model == "bilstm"):
+        model = BiLSTM(window)
     elif(select_model == "cnn_lstm"):
         model = CNN_LSTM(window)
     elif(select_model == "cnn_bilstm"):

@@ -42,6 +42,18 @@ class LSTM(nn.Module):
         x = x.unsqueeze(-1)
         _, (h, _) = self.lstm(x)
         return self.fc(h[-1])
+    
+class BiLSTM(nn.Module):
+    def __init__(self, window):
+        super().__init__()
+        self.bilstm = nn.LSTM(1, 32, batch_first=True, bidirectional=True)
+        self.fc = nn.Linear(64, 1)
+
+    def forward(self, x):
+        x = x.unsqueeze(-1)
+        _, (h, _) = self.bilstm(x)
+        h = torch.cat((h[-2], h[-1]), dim=1)
+        return self.fc(h)
 
 class CNN_LSTM(nn.Module):
     def __init__(self, window):
