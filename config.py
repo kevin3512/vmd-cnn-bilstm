@@ -37,15 +37,15 @@ class Config:
     model_predict_file = "result/模型运行结果.xlsx"  # 模型预测结果保存文件名
 
     # VMD参数配置
-    K=7
-    alpha=500
-    tau=1
+    K=9
+    alpha=491.26879638573826
+    tau=0.3282215942833392
     DC=1
     init=1
-    tol=1e-05
-    N=3000
+    tol=0.0002122651242828138
+    N= 3280
     hasResidual=False  # 是否添加残差分量作为最后一个IMF
-    vmd_enable=False  # 是否启用VMD参数调优
+    vmd_enable=True  # 是否启用VMD参数调优
     vmd_single_model = True # 是否只使用单个模型进行VMD参数调优
     single_model = "cnn_bilstm"  # 使用单个模型预测（需要enable=False生效），可选值: "cnn", "lstm", "bilstm","cnn_lstm", "cnn_bilstm", "tcn", "rnn"
     
@@ -68,6 +68,11 @@ class Config:
     # 兼容旧配置（基于标准差） - 如需改回，请使用 std_* 变量
     std_bilstm_threshold = 0.1
     std_lstm_threshold = 0.05
+
+    #高频模型
+    high_mode = "CNN-BiLSTM"  # 高频模型选择，可选值: "CNN", "LSTM", "BiLSTM", "CNN-LSTM", "CNN-BiLSTM", "TCN", "RNN"
+    mide_mode = "CNN-LSTM"  # 中频模型选择，可选值同上
+    low_mode = "CNN"  # 低频模型选择，可选值同上
 
     ############################################################################################################
     

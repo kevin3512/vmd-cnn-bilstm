@@ -93,14 +93,32 @@ def select_model(imf, window):
         complexity = imf_spectral_entropy(imf)
         st = np.std(imf)
         if st > Config.std_bilstm_threshold:
-            print(f"选择 CNN-BiLSTM 模型，IMF 复杂度: {complexity:.4f}， 标准差: {st:.4f}")
+            print(f"选择高频模型{Config.high_mode}，IMF 复杂度: {complexity:.4f}， 标准差: {st:.4f}")
             return CNN_BiLSTM(window)
         elif st > Config.std_lstm_threshold:
-            print(f"选择 CNN-LSTM 模型，IMF 复杂度: {complexity:.4f}， 标准差: {st:.4f}")
+            print(f"选择中频模型{Config.mide_mode}，IMF 复杂度: {complexity:.4f}， 标准差: {st:.4f}")
             return CNN_LSTM(window)
         else:
-            print(f"选择 CNN 模型，IMF 复杂度: {complexity:.4f}， 标准差: {st:.4f}")
+            print(f"选择低频模型{Config.low_mode}，IMF 复杂度: {complexity:.4f}， 标准差: {st:.4f}")
             return CNN(window)
+
+def get_model_by_name(name, window):
+    if name == "CNN":
+        return CNN(window)
+    elif name == "RNN":
+        return RNN(window)
+    elif name == "LSTM":
+        return LSTM(window)
+    elif name == "BiLSTM":
+        return BiLSTM(window)
+    elif name == "CNN-LSTM":
+        return CNN_LSTM(window)
+    elif name == "CNN-BiLSTM":
+        return CNN_BiLSTM(window)
+    elif name == "TCN":
+        return TCN(window)
+    else:
+        raise ValueError(f"Unsupported model name: {name}")
 
 def train_and_predict(series, model, window, epochs=Config.epochs, per_imf_normalize=False, batch_size=32, loss_type='mse'):
     """

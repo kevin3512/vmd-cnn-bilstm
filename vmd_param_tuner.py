@@ -16,7 +16,7 @@ def compute_mape(a, b, eps=1e-8):
     return np.mean(np.abs((a - b) / (a + eps))) * 100
 
 
-def tune_vmd_params(max_evals=200, early_stop_mape=0.1):
+def tune_vmd_params(max_evals=20000, early_stop_mape=0.001):
     """Grid-search a small VMD parameter space to minimize reconstruction MAPE.
     Returns best_params dict and best_mape.
     If found mape <= early_stop_mape, update `config.py` VMD params automatically.
@@ -25,13 +25,13 @@ def tune_vmd_params(max_evals=200, early_stop_mape=0.1):
     series = np.array(series).flatten()
 
     # parameter grids (kept small to limit runtime)
-    K_list = [3, 4, 5, 6, 7, 8]
+    # K_list = [3, 4, 5, 6, 7, 8]
+    K_list = [6, 7, 8]
     alpha_list = [500, 1000, 1500, 2000, 3000, 4000, 5000, 10000]
     tau_list = [0,1]
     DC_list = [0,1]
     init_list = [0,1]
     tol_list = [1e-5, 1e-6, 1e-7, 1e-8]
-    N_list = [500, 1000, 2000, 3000, 4000]
 
     best_mape = float('inf')
     best_params = None
@@ -40,13 +40,13 @@ def tune_vmd_params(max_evals=200, early_stop_mape=0.1):
     eval_count = 0
     start_time = time.time()
 
-    for K, alpha, tau, DC, init, tol, N in itertools.product(K_list, alpha_list, tau_list, DC_list, init_list, tol_list, N_list):
+    for K, alpha, tau, DC, init, tol in itertools.product(K_list, alpha_list, tau_list, DC_list, init_list, tol_list):
         if eval_count >= max_evals:
             break
         eval_count += 1
 
         try:
-            imfs, _, _ = VMD(series, alpha=alpha, tau=tau, K=K, DC=DC, init=init, tol=tol, N=N)
+            imfs, _, _ = VMD(series, alpha=alpha, tau=tau, K=K, DC=DC, init=init, tol=tol)
         except Exception as e:
             print(f"VMD failed for params K={K},alpha={alpha},init={init},tol={tol}: {e}")
             continue
@@ -67,11 +67,11 @@ def tune_vmd_params(max_evals=200, early_stop_mape=0.1):
             # fallback to scaled-domain mape
             mape = compute_mape(s, vmd_sum, eps=1e-6)
 
-        print(f"Eval {eval_count}: K={K},alpha={alpha},DC={DC},init={init},tol={tol},N={N} -> MAPE={mape:.6f}%")
+        print(f"Eval {eval_count}: K={K},alpha={alpha},DC={DC},init={init},tol={tol} -> MAPE={mape:.6f}%")
 
         if mape < best_mape:
             best_mape = mape
-            best_params = dict(K=K, alpha=alpha, tau=tau, DC=DC, init=init, tol=tol, N=N)
+            best_params = dict(K=K, alpha=alpha, tau=tau, DC=DC, init=init, tol=tol)
             # store best reconstruction for plotting
             try:
                 best_s_orig = s_orig.copy()
