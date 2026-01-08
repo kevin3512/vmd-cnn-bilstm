@@ -13,6 +13,8 @@ import os
 import metrics
 import my_vmd
 from metrics import evaluate
+import time
+import json
 
 
 
@@ -69,24 +71,24 @@ def imf_spectral_entropy(imf, eps=1e-12):
 def select_model(imf, window):
 
     if Config.vmd_single_model:  #只使用单个模型进行预测
-        if Config.single_model == "cnn":
+        if Config.single_model == "CNN":
             print(f"选择单个 CNN 模型")
-            return CNN(window)
-        elif Config.single_model == "rnn":
+            return CNN(window), Config.single_model
+        elif Config.single_model == "RNN":
             print(f"选择单个 RNN 模型")
-            return RNN(window)  
-        elif Config.single_model == "lstm":
+            return RNN(window), Config.single_model
+        elif Config.single_model == "LSTM":
             print(f"选择单个 LSTM 模型")
-            return LSTM(window)
-        elif Config.single_model == "bilstm":
+            return LSTM(window), Config.single_model
+        elif Config.single_model == "BiLSTM":
             print(f"选择单个 BiLSTM 模型")
-            return BiLSTM(window)
-        elif Config.single_model == "cnn_lstm":
+            return BiLSTM(window), Config.single_model
+        elif Config.single_model == "CNN-LSTM":
             print(f"选择单个 CNN-LSTM 模型")
-            return CNN_LSTM(window)
-        elif Config.single_model == "cnn_bilstm":
+            return CNN_LSTM(window), Config.single_model
+        elif Config.single_model == "CNN-BiLSTM":
             print(f"选择单个 CNN-BiLSTM 模型")
-            return CNN_BiLSTM(window)
+            return CNN_BiLSTM(window), Config.single_model
         else:
             raise ValueError(f"Unsupported single_model: {Config.single_model}")
     else:  # 根据 IMF 预测复杂度选择模型（谱熵）
@@ -94,13 +96,13 @@ def select_model(imf, window):
         st = np.std(imf)
         if st > Config.std_bilstm_threshold:
             print(f"选择高频模型{Config.high_mode}，IMF 复杂度: {complexity:.4f}， 标准差: {st:.4f}")
-            return CNN_BiLSTM(window)
+            return CNN_BiLSTM(window), Config.high_mode.upper()
         elif st > Config.std_lstm_threshold:
             print(f"选择中频模型{Config.mide_mode}，IMF 复杂度: {complexity:.4f}， 标准差: {st:.4f}")
-            return CNN_LSTM(window)
+            return CNN_LSTM(window), Config.mide_mode.upper()
         else:
             print(f"选择低频模型{Config.low_mode}，IMF 复杂度: {complexity:.4f}， 标准差: {st:.4f}")
-            return CNN(window)
+            return CNN(window), Config.low_mode.upper()
 
 def get_model_by_name(name, window):
     if name == "CNN":
@@ -157,6 +159,7 @@ def train_and_predict(series, model, window, epochs=Config.epochs, per_imf_norma
     loss_history = []
 
     num_train = X_train.size(0)
+    train_start = time.time()
     for epoch in range(epochs):
         epoch_losses = []
         # iterate by sequential mini-batches (no shuffle for time series)
@@ -178,7 +181,15 @@ def train_and_predict(series, model, window, epochs=Config.epochs, per_imf_norma
         if (epoch + 1) % 100 == 0 or epoch == 0: # 100的倍数打印一次
             print(f"Epoch {epoch+1}/{epochs}, Loss: {avg_loss:.6f}")
 
+    train_end = time.time()
+    train_time = train_end - train_start
+    print(f"Training time: {train_time:.4f} seconds")
+
+    inference_start = time.time()
     preds = model(X_test).detach().numpy().flatten()
+    inference_end = time.time()
+    inference_time = inference_end - inference_start
+    print(f"Inference time: {inference_time:.6f} seconds")
 
     if per_imf_normalize:
         preds = preds * sigma + mu
@@ -283,26 +294,23 @@ def vmd_cnn_bilstm_pipeline(file_path):
     window = Config.window
 
     predictions = []
-    loss_records = []
     imf_preds = []
     imf_trues = []
 
     for idx, imf in enumerate(imfs):
-        # 使用单独新增的 TCN 模型来预测 IMF-1（索引 0），不替换其他 IMF 的原有选择逻辑
-        # if idx == (len(imfs) - 1):
-        if idx == -1:  #不使用TCN模型
-            model = TCN(window)
-            print(f"IMF-{idx+1}: 使用 TCN 模型预测")
-        else:
-            print(f"IMF-{idx+1}: 模型选择如下：")
-            model = select_model(imf, window)
-
+        _, model_name = select_model(imf, window)
         # 对每个 IMF 先做去均值标准化再训练（防止不同 IMF 幅度差异导致偏差）
-        pred, loss_hist = train_and_predict(imf, model, window, per_imf_normalize=True, batch_size=32, loss_type='huber')
+        # pred, _ = train_and_predict(imf, model, window, per_imf_normalize=True, batch_size=32, loss_type='huber')
+        infer_start = time.time()
+        pred = infer_imf_model(imf, model_zoo[(imf_idx, model_name)], window)
+        infer_end = time.time()
+        print(f"IMF-{idx + 1} 使用模型 {model_name} 推理时间: {infer_end - infer_start:.6f} 秒")
+        # 保存推理时间
+        metrics.save_imf_model_train_time(imf_idx=imf_idx, model_name=model_name, train_time=infer_start - infer_end, sheet_name="Infer_times", file_name=Config.model_predict_file)
         predictions.append(pred)
-        loss_records.append(loss_hist)
         imf_preds.append(pred)
         imf_trues.append(imf[-len(pred):])
+        # 绘制每个 IMF 的预测结果对比图
         plot_imf_prediction(
             imf_true=imf[-len(pred):],
             imf_pred=pred,
@@ -317,44 +325,21 @@ def vmd_cnn_bilstm_pipeline(file_path):
     final_pred = scaler.inverse_transform(final_pred.reshape(-1, 1)).flatten()
     y_true = scaler.inverse_transform(y_true.reshape(-1, 1)).flatten()
 
-    return y_true, final_pred, loss_records, imf_preds, imf_trues
+    return y_true, final_pred, imf_preds, imf_trues
 
-def no_cmd_pipeline(file_path, select_model="cnn"):
+def no_cmd_pipeline(file_path, select_model="CNN"):
     series, scaler = load_data(file_path)
-
-    imfs = my_vmd.vmd_decompose(series)
-    window = Config.window
-
-    predictions = []
-    loss_records = []
-
-    if(select_model == "cnn"):
-        model = CNN(window)
-    elif(select_model == "tcn"):
-        model = TCN(window)
-    elif (select_model == "rnn"):
-        model = RNN(window)
-    elif(select_model == "lstm"):
-        model = LSTM(window)
-    elif(select_model == "bilstm"):
-        model = BiLSTM(window)
-    elif(select_model == "cnn_lstm"):
-        model = CNN_LSTM(window)
-    elif(select_model == "cnn_bilstm"):
-        model = CNN_BiLSTM(window)
-
     # 对每个 IMF 先做去均值标准化再训练（防止不同 IMF 幅度差异导致偏差）
-    pred, loss_hist = train_and_predict(series, model, window, per_imf_normalize=True, batch_size=32, loss_type='huber')
-    predictions.append(pred)
-    loss_records.append(loss_hist)
-    final_pred = np.sum(predictions, axis=0)
+    # pred, _ = train_and_predict(series, model, window, per_imf_normalize=True, batch_size=32, loss_type='huber')
+    pred = infer_imf_model(series, model_zoo[(-1, select_model)], Config.window)  #-1表示整体序列,没有进行vmd分解
+    final_pred = np.sum(pred, axis=0)
 
     y_true = series[-len(final_pred):]
 
     final_pred = scaler.inverse_transform(final_pred.reshape(-1, 1)).flatten()
     y_true = scaler.inverse_transform(y_true.reshape(-1, 1)).flatten()
 
-    return y_true, final_pred, loss_records
+    return y_true, final_pred
 
 def regression_metrics(y_true, y_pred, eps=1e-8):
     """
@@ -574,19 +559,262 @@ def get_model_name_from_config():
             return "本文模型"
     else:
         return Config.single_model.upper()
+    
+def build_model(model_name, window):
+    model_name = model_name.upper()
+    if model_name == "CNN":
+        return CNN(window)
+    elif model_name == "CNN-LSTM":
+        return CNN_LSTM(window)
+    elif model_name == "CNN-BILSTM":
+        return CNN_BiLSTM(window)
+    elif model_name == "LSTM":
+        return LSTM(window)
+    elif model_name == "BILSTM":
+        return BiLSTM(window)
+    elif model_name == "RNN":
+        return RNN(window)
+    else:
+        raise ValueError(f"Unsupported model type: {model_name}")
+
+
+def train_imf_model(
+        imf,
+        imf_idx,
+        model_name,
+        window,
+        epochs,
+        batch_size,
+        loss_type="huber",
+        per_imf_normalize=True
+):
+    """
+    针对 (IMF_idx, model_name) 这一组合进行一次完整训练
+    """
+
+    series = imf.copy()
+    mu, sigma = 0.0, 1.0
+
+    if per_imf_normalize:
+        mu = np.mean(series)
+        sigma = np.std(series) if np.std(series) > 0 else 1.0
+        series = (series - mu) / sigma
+
+    X, y = create_dataset(series, window)
+    split = int(len(X) * Config.train_percent)
+
+    X_train = torch.tensor(X[:split], dtype=torch.float32)
+    y_train = torch.tensor(y[:split], dtype=torch.float32)
+
+    model = build_model(model_name, window)
+    optimizer = torch.optim.Adam(model.parameters(), lr=Config.lr)
+
+    loss_fn = {
+        "mse": nn.MSELoss(),
+        "mae": nn.L1Loss(),
+        "huber": nn.SmoothL1Loss()
+    }[loss_type]
+
+    loss_history = []
+    model.train()
+
+    for epoch in range(epochs):
+        losses = []
+        for i in range(0, len(X_train), batch_size):
+            xb = X_train[i:i + batch_size]
+            yb = y_train[i:i + batch_size]
+
+            optimizer.zero_grad()
+            pred = model(xb).squeeze()
+            loss = loss_fn(pred, yb)
+            loss.backward()
+            optimizer.step()
+            losses.append(loss.item())
+
+        loss_history.append(float(np.mean(losses)))
+        if epoch == 0 or (epoch + 1) % 100 == 0:
+            print(
+                f"[TRAIN] IMF-{imf_idx+1} | {model_name} | "
+                f"Epoch {epoch+1}/{epochs} | Loss={loss_history[-1]:.6f}"
+            )
+
+    return {
+        "model": model,
+        "mu": mu,
+        "sigma": sigma,
+        "loss_history": loss_history,
+        "imf_idx": imf_idx,
+        "model_name": model_name
+    }
+
+
+def infer_imf_model(imf, trained_bundle, window):
+    series = imf.copy()
+
+    mu = trained_bundle["mu"]
+    sigma = trained_bundle["sigma"]
+
+    series = (series - mu) / sigma
+
+    X, _ = create_dataset(series, window)
+    split = int(len(X) * Config.train_percent)
+    X_test = torch.tensor(X[split:], dtype=torch.float32)
+
+    model = trained_bundle["model"]
+    model.eval()
+
+    with torch.no_grad():
+        preds = model(X_test).cpu().numpy().flatten()
+
+    preds = preds * sigma + mu
+    return preds
+
+def train_model(series):
+    """
+    直接传入完整的数据集进行训练，内部实现会自动根据Config.train_percent划分训练集和测试集
+    返回训练好的模型字典： (imf_idx, model_name) -> trained_bundle
+    """
+    model_zoo = {}   # (imf_idx, model_name) -> trained_bundle
+    loss_records = []
+    if(Config.vmd_enable):
+        imfs = my_vmd.vmd_decompose(series)
+        for imf_idx, imf in enumerate(imfs):
+            # “多个模型对应不同的imf都要训练”
+            for model_name in Config.train_models:
+                key = (imf_idx, model_name)
+                print(f"训练 IMF-{imf_idx+1} 使用模型 {model_name}...")
+                train_start = time.time()
+                if key not in model_zoo:
+                    bundel = train_imf_model(
+                        imf=imf,
+                        imf_idx=imf_idx,
+                        model_name=model_name,
+                        window=Config.window,
+                        epochs=Config.epochs,
+                        batch_size=32
+                    )
+                    model_zoo[key] = bundel
+                    loss_records.append(bundel["loss_history"])
+                    # 保存模型
+                    save_imf_model(model_zoo[key])
+                    train_end = time.time()
+                    print(f"[TIME] IMF-{imf_idx+1} | {model_name} 训练耗时: {train_end - train_start:.2f} 秒")
+                    metrics.save_imf_model_train_time(imf_idx=imf_idx, model_name=model_name, train_time=train_end - train_start, sheet_name="Train_times", file_name=Config.model_predict_file)
+                    plot_loss_curve(
+                        bundel["loss_history"],
+                        save_path=f"train/loss_imf{imf_idx}_{model_name}.png",
+                        title=f"IMF-{imf_idx}_{model_name} 训练损失曲线"
+                    )
+    else:  # 不进行 VMD 分解，整体序列训练单模型
+        imf_idx = -1  #-1表示整体序列,没有进行vmd分解
+        imf = series
+        for model_name in Config.train_models:
+            key = (imf_idx, model_name)
+            print(f"训练 整体序列 使用模型 {model_name}...")
+            train_start = time.time()
+            if key not in model_zoo:
+                bundel = train_imf_model(
+                    imf=imf,
+                    imf_idx=imf_idx,
+                    model_name=model_name,
+                    window=Config.window,
+                    epochs=Config.epochs,
+                    batch_size=32
+                )
+                model_zoo[key] = bundel
+                loss_records.append(bundel["loss_history"])
+                # 保存模型
+                save_imf_model(model_zoo[key])
+                train_end = time.time()
+                print(f"[TIME] 整体序列 | {model_name} 训练耗时: {train_end - train_start:.2f} 秒")
+                metrics.save_imf_model_train_time(imf_idx=imf_idx, model_name=model_name, train_time=train_end - train_start, sheet_name="Train_times", file_name=Config.model_predict_file)
+                plot_loss_curve(
+                    bundel["loss_history"],
+                    save_path=f"train/loss_{model_name}.png",
+                    title=f"整体序列_{model_name} 训练损失曲线"
+                )
+    return model_zoo, loss_records
+
+def load_imf_model(imf_idx, model_name, window, save_root="checkpoints"):
+    load_dir = os.path.join(save_root, f"IMF{imf_idx+1}_{model_name}")
+
+    model_path = os.path.join(load_dir, "model.pth")
+    meta_path = os.path.join(load_dir, "meta.json")
+
+    if not (os.path.exists(model_path) and os.path.exists(meta_path)):
+        return None  # 表示本地不存在，需要重新训练
+
+    # 1. 读取 meta
+    with open(meta_path, "r", encoding="utf-8") as f:
+        meta = json.load(f)
+
+    # 2. 构建模型结构
+    model = build_model(model_name, window)
+    model.load_state_dict(torch.load(model_path, map_location="cpu"))
+    model.eval()
+
+    print(f"[LOAD] IMF-{imf_idx+1} | {model_name} loaded.")
+
+    return {
+        "model": model,
+        "mu": meta["mu"],
+        "sigma": meta["sigma"],
+        "imf_idx": meta["imf_idx"],
+        "model_name": meta["model_name"]
+    }
+
+
+
+def save_imf_model(trained_bundle, save_root="checkpoints"):
+    imf_idx = trained_bundle["imf_idx"]
+    model_name = trained_bundle["model_name"]
+
+    save_dir = os.path.join(save_root, f"IMF{imf_idx+1}_{model_name}")
+    os.makedirs(save_dir, exist_ok=True)
+
+    # 1. 保存模型参数
+    torch.save(
+        trained_bundle["model"].state_dict(),
+        os.path.join(save_dir, "model.pth")
+    )
+
+    # 2. 保存元信息（JSON 可读、可复现）
+    meta = {
+        "imf_idx": imf_idx,
+        "model_name": model_name,
+        "mu": trained_bundle["mu"],
+        "sigma": trained_bundle["sigma"],
+        "window": Config.window,
+        "train_percent": Config.train_percent
+    }
+
+    with open(os.path.join(save_dir, "meta.json"), "w", encoding="utf-8") as f:
+        json.dump(meta, f, indent=2)
+
+    print(f"[SAVE] IMF-{imf_idx+1} | {model_name} saved.")
+
 
 if __name__ == '__main__':
     #删除所有.png文件
     delete_all_png_files()
+    model_zoo = {}
+    #加载数据
+    series, scaler = load_data(Config.file_name)
+    # 重新训练模型
+    if(Config.retrain_model):
+        model_zoo, loss_records = train_model(series)
+    else:  # 加载已有模型
+        for imf_idx in range(Config.K):  #假设有3个imf分量
+            for model_name in Config.train_models:
+                bundel = load_imf_model(imf_idx=imf_idx, model_name=model_name, window=Config.window)
+                if bundel is not None:
+                    model_zoo[(imf_idx, model_name)] = bundel
+    if model_zoo is not None and len(model_zoo) > 0:
+        print(f"模型库加载完成，共有 {len(model_zoo)} 个训练好的 IMF-模型 组合。")
+    else:
+        print("模型库为空，请设置Config.retrain_model=True重新训练模型后再运行。")
+        exit(1)
 
-    # 调用 VMD 参数自动调优（必要时会写回 config.py）
-    # try:
-    #     print('Running VMD parameter tuner...')
-    #     from vmd_param_tuner import tune_vmd_params
-    #     best_params, best_mape = tune_vmd_params(max_evals=200, early_stop_mape=0.1)
-    #     print(f'VMD tuner finished. best_mape={best_mape:.6f}, best_params={best_params}')
-    # except Exception as e:
-    #     print('VMD tuner failed:', e)
 
     # 运行 VMD-CNN-BiLSTM 模型获取预测结果
     if(Config.vmd_enable):
@@ -614,9 +842,6 @@ if __name__ == '__main__':
 
     # 绘制预测结果对比图
     plot_prediction(y_true, y_pred)
-    for i, loss_hist in enumerate(loss_records):
-        plot_loss_curve(
-            loss_hist,
-            save_path=f"loss_imf_{i+1}.png",
-            title=f"IMF-{i+1} 训练损失曲线"
-        )
+    
+
+    

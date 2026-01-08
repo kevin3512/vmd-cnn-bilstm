@@ -1,0 +1,8 @@
+{
+  "imf_idx": 0,
+  "model_name": "RNN",
+  "mu": 0.5026633075187434,
+  "sigma": 0.1065282847581573,
+  "window": 24,
+  "train_percent": 0.8
+}

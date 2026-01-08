@@ -2,6 +2,7 @@ import numpy as np
 import os
 from datetime import datetime
 from sklearn.metrics import mean_squared_error, mean_absolute_percentage_error, r2_score
+import pandas as pd
 
 
 def evaluate(y_true, y_pred):
@@ -145,8 +146,6 @@ def save_evaluation(y_true, y_pred, config_obj=None, out_dir='results', filename
     print(f"评估结果已追加到: {out_path}")
     return out_path
 
-import numpy as np
-
 
 def save_imf_evaluation(y_true, y_pred, imf_index, config_obj=None, out_dir='results', filename=None):
     # 计算指标
@@ -175,3 +174,65 @@ def save_imf_evaluation(y_true, y_pred, imf_index, config_obj=None, out_dir='res
 
     print(f"评估结果已追加到: {out_path}")
     return out_path
+
+
+
+
+def save_imf_model_train_time(
+        imf_idx,
+        model_name,
+        train_time,
+        sheet_name,
+        file_name
+):
+    """
+    保存 (imf_idx, model_name) 对应的训练时间（秒）
+    - 已存在则覆盖
+    - 不存在则新增
+    """
+
+    # 构造唯一行索引（非常重要，保证可覆盖）
+    row_key = f"IMF{imf_idx + 1}_{model_name}"
+
+    # 新数据行
+    new_row = pd.DataFrame(
+        {"TRAIN_TIME_SEC": [float(train_time)]},
+        index=[row_key]
+    )
+
+    # 1. 读取已有 Sheet（如果存在）
+    try:
+        df_old = pd.read_excel(
+            file_name,
+            sheet_name=sheet_name,
+            index_col=0
+        ) if os.path.exists(file_name) else pd.DataFrame()
+    except ValueError:
+        # Sheet 不存在
+        df_old = pd.DataFrame()
+
+    # 2. 覆盖或新增行
+    df_old = df_old.drop(index=row_key, errors="ignore")
+    df_new = pd.concat([df_old, new_row])
+
+    # 3. 写回 Excel（替换整个 sheet，确保行为可预期）
+    if os.path.exists(file_name):
+        with pd.ExcelWriter(
+                file_name,
+                engine="openpyxl",
+                mode="a",
+                if_sheet_exists="replace"
+        ) as writer:
+            df_new.to_excel(writer, sheet_name=sheet_name)
+    else:
+        with pd.ExcelWriter(
+                file_name,
+                engine="openpyxl",
+                mode="w"
+        ) as writer:
+            df_new.to_excel(writer, sheet_name=sheet_name)
+
+    print(
+        f"[SAVE TRAIN TIME] IMF-{imf_idx + 1} | {model_name} "
+        f"-> {train_time:.4f}s"
+    )

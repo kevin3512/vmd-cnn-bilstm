@@ -47,7 +47,7 @@ class Config:
     hasResidual=False  # 是否添加残差分量作为最后一个IMF
     vmd_enable=True  # 是否启用VMD参数调优
     vmd_single_model = True # 是否只使用单个模型进行VMD参数调优
-    single_model = "cnn_bilstm"  # 使用单个模型预测（需要enable=False生效），可选值: "cnn", "lstm", "bilstm","cnn_lstm", "cnn_bilstm", "tcn", "rnn"
+    single_model = "CNN-BiLSTM"  # 使用单个模型预测（需要enable=False生效），可选值: "CNN", "LSTM", "BiLSTM","CNN-LSTM", "CNN-BiLSTM", "TCN", "RNN"
     
     # 数据集配置
     file_name = "data_set/河北数据集.xlsx"
@@ -61,6 +61,8 @@ class Config:
     # 训练配置
     epochs = 500
     lr = 0.001   #学习率
+    retrain_model = True  # 是否重新训练模型
+    train_models = ["CNN", "LSTM", "BiLSTM", "CNN-LSTM", "CNN-BiLSTM", "RNN"]  # 需要训练的模型列表
 
     # 模型选择阈值（基于 IMF 预测复杂度：谱熵，范围 0-1）
     complexity_bilstm_threshold = 0.6  # 大于此值选择 CNN-BiLSTM

@@ -1,0 +1,8 @@
+{
+  "imf_idx": 6,
+  "model_name": "CNN",
+  "mu": -7.567860401884825e-06,
+  "sigma": 0.01029822546581179,
+  "window": 24,
+  "train_percent": 0.8
+}

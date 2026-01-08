@@ -13,6 +13,7 @@ import os
 import my_vmd
 import metrics
 import cnn
+import time
 
 
 
@@ -97,6 +98,7 @@ def train_and_predict(series, model, window, epochs=Config.epochs, per_imf_norma
     loss_history = []
 
     num_train = X_train.size(0)
+    train_start = time.time()
     for epoch in range(epochs):
         epoch_losses = []
         # iterate by sequential mini-batches (no shuffle for time series)
@@ -118,7 +120,15 @@ def train_and_predict(series, model, window, epochs=Config.epochs, per_imf_norma
         if (epoch + 1) % 100 == 0 or epoch == 0: # 100的倍数打印一次
             print(f"Epoch {epoch+1}/{epochs}, Loss: {avg_loss:.6f}")
 
+    train_end = time.time()
+    train_time = train_end - train_start
+    print(f"Training time: {train_time:.4f} seconds")
+
+    inference_start = time.time()
     preds = model(X_test).detach().numpy().flatten()
+    inference_end = time.time()
+    inference_time = inference_end - inference_start
+    print(f"Inference time: {inference_time:.6f} seconds")
 
     if per_imf_normalize:
         preds = preds * sigma + mu
