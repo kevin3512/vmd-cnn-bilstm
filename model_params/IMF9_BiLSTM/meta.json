@@ -1,0 +1,8 @@
+{
+  "imf_idx": 8,
+  "model_name": "BiLSTM",
+  "mu": 3.5549386944405884e-07,
+  "sigma": 0.007699700920561333,
+  "window": 24,
+  "train_percent": 0.8
+}

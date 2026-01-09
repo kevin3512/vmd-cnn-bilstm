@@ -2,7 +2,7 @@
   "imf_idx": 0,
   "model_name": "BiLSTM",
   "mu": 0.5026633075187434,
-  "sigma": 0.1065282847581573,
+  "sigma": 0.10652828475815723,
   "window": 24,
   "train_percent": 0.8
 }

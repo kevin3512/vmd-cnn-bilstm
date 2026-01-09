@@ -61,9 +61,10 @@ class Config:
     # 训练配置
     epochs = 500
     lr = 0.001   #学习率
-    retrain_model = True  # 是否重新训练模型
-    train_models = ["CNN", "LSTM", "BiLSTM", "CNN-LSTM", "CNN-BiLSTM", "RNN"]  # 需要训练的模型列表
-
+    retrain_model = False  # 是否重新训练模型
+    # train_models = ["CNN", "CNN-LSTM", "CNN-BiLSTM", "LSTM", "BiLSTM", "RNN"]  # 需要训练的模型列表
+    train_models = ["BiLSTM"]
+    
     # 模型选择阈值（基于 IMF 预测复杂度：谱熵，范围 0-1）
     complexity_bilstm_threshold = 0.6  # 大于此值选择 CNN-BiLSTM
     complexity_lstm_threshold = 0.4   # 大于此值选择 CNN-LSTM

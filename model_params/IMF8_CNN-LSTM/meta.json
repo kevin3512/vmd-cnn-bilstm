@@ -1,0 +1,8 @@
+{
+  "imf_idx": 7,
+  "model_name": "CNN-LSTM",
+  "mu": 4.802266606778327e-07,
+  "sigma": 0.008709116861843927,
+  "window": 24,
+  "train_percent": 0.8
+}

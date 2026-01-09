@@ -302,11 +302,11 @@ def vmd_cnn_bilstm_pipeline(file_path):
         # 对每个 IMF 先做去均值标准化再训练（防止不同 IMF 幅度差异导致偏差）
         # pred, _ = train_and_predict(imf, model, window, per_imf_normalize=True, batch_size=32, loss_type='huber')
         infer_start = time.time()
-        pred = infer_imf_model(imf, model_zoo[(imf_idx, model_name)], window)
+        pred = infer_imf_model(imf, model_zoo[(idx+1, model_name)], window)
         infer_end = time.time()
-        print(f"IMF-{idx + 1} 使用模型 {model_name} 推理时间: {infer_end - infer_start:.6f} 秒")
+        print(f"IMF-{idx+1} 使用模型 {model_name} 推理时间: {infer_end - infer_start:.6f} 秒")
         # 保存推理时间
-        metrics.save_imf_model_train_time(imf_idx=imf_idx, model_name=model_name, train_time=infer_start - infer_end, sheet_name="Infer_times", file_name=Config.model_predict_file)
+        metrics.save_imf_model_train_time(imf_idx=idx, model_name=model_name, train_time=infer_end - infer_start, sheet_name="Infer_times", file_name=Config.model_predict_file)
         predictions.append(pred)
         imf_preds.append(pred)
         imf_trues.append(imf[-len(pred):])
@@ -314,7 +314,7 @@ def vmd_cnn_bilstm_pipeline(file_path):
         plot_imf_prediction(
             imf_true=imf[-len(pred):],
             imf_pred=pred,
-            imf_index=idx + 1,
+            imf_index=idx,
             save_path="imf_predictions"
         )
 
@@ -616,27 +616,28 @@ def train_imf_model(
     }[loss_type]
 
     loss_history = []
-    model.train()
 
+    num_train = X_train.size(0)
     for epoch in range(epochs):
-        losses = []
-        for i in range(0, len(X_train), batch_size):
-            xb = X_train[i:i + batch_size]
-            yb = y_train[i:i + batch_size]
+        epoch_losses = []
+        # iterate by sequential mini-batches (no shuffle for time series)
+        for start in range(0, num_train, batch_size):
+            end = start + batch_size
+            xb = X_train[start:end]
+            yb = y_train[start:end]
 
             optimizer.zero_grad()
-            pred = model(xb).squeeze()
-            loss = loss_fn(pred, yb)
+            output = model(xb).squeeze()
+            loss = loss_fn(output, yb)
             loss.backward()
             optimizer.step()
-            losses.append(loss.item())
 
-        loss_history.append(float(np.mean(losses)))
-        if epoch == 0 or (epoch + 1) % 100 == 0:
-            print(
-                f"[TRAIN] IMF-{imf_idx+1} | {model_name} | "
-                f"Epoch {epoch+1}/{epochs} | Loss={loss_history[-1]:.6f}"
-            )
+            epoch_losses.append(loss.item())
+
+        avg_loss = float(np.mean(epoch_losses)) if epoch_losses else 0.0
+        loss_history.append(avg_loss)
+        if (epoch + 1) % 100 == 0 or epoch == 0: # 100的倍数打印一次
+            print(f"Epoch {epoch+1}/{epochs}, Loss: {avg_loss:.6f}")
 
     return {
         "model": model,
@@ -649,23 +650,18 @@ def train_imf_model(
 
 
 def infer_imf_model(imf, trained_bundle, window):
-    series = imf.copy()
 
-    mu = trained_bundle["mu"]
-    sigma = trained_bundle["sigma"]
+    series_used = imf.copy()
+    mu = np.mean(series_used)
+    sigma = np.std(series_used) if np.std(series_used) > 0 else 1.0
+    series_used = (series_used - mu) / sigma
 
-    series = (series - mu) / sigma
-
-    X, _ = create_dataset(series, window)
-    split = int(len(X) * Config.train_percent)
-    X_test = torch.tensor(X[split:], dtype=torch.float32)
+    X, _ = create_dataset(series_used, window)
+    split = int(len(X) * Config.test_percent)
+    X_test = torch.tensor(X[-split:], dtype=torch.float32)
 
     model = trained_bundle["model"]
-    model.eval()
-
-    with torch.no_grad():
-        preds = model(X_test).cpu().numpy().flatten()
-
+    preds = model(X_test).detach().numpy().flatten()
     preds = preds * sigma + mu
     return preds
 
@@ -678,10 +674,12 @@ def train_model(series):
     loss_records = []
     if(Config.vmd_enable):
         imfs = my_vmd.vmd_decompose(series)
-        for imf_idx, imf in enumerate(imfs):
-            # “多个模型对应不同的imf都要训练”
-            for model_name in Config.train_models:
-                key = (imf_idx, model_name)
+        # “多个模型对应不同的imf都要训练”
+        for model_name in Config.train_models:
+            for imf_idx, imf in enumerate(imfs):
+                # if imf_idx < 8:
+                #     continue  # 只训练后面的低频分量
+                key = (imf_idx+1, model_name)
                 print(f"训练 IMF-{imf_idx+1} 使用模型 {model_name}...")
                 train_start = time.time()
                 if key not in model_zoo:
@@ -735,7 +733,7 @@ def train_model(series):
                 )
     return model_zoo, loss_records
 
-def load_imf_model(imf_idx, model_name, window, save_root="checkpoints"):
+def load_imf_model(imf_idx, model_name, window, save_root="model_params"):
     load_dir = os.path.join(save_root, f"IMF{imf_idx+1}_{model_name}")
 
     model_path = os.path.join(load_dir, "model.pth")
@@ -765,7 +763,7 @@ def load_imf_model(imf_idx, model_name, window, save_root="checkpoints"):
 
 
 
-def save_imf_model(trained_bundle, save_root="checkpoints"):
+def save_imf_model(trained_bundle, save_root="model_params"):
     imf_idx = trained_bundle["imf_idx"]
     model_name = trained_bundle["model_name"]
 
@@ -808,7 +806,8 @@ if __name__ == '__main__':
             for model_name in Config.train_models:
                 bundel = load_imf_model(imf_idx=imf_idx, model_name=model_name, window=Config.window)
                 if bundel is not None:
-                    model_zoo[(imf_idx, model_name)] = bundel
+                    model_zoo[(imf_idx+1, model_name)] = bundel
+                    print(f"获取到cnn_model-------====================")
     if model_zoo is not None and len(model_zoo) > 0:
         print(f"模型库加载完成，共有 {len(model_zoo)} 个训练好的 IMF-模型 组合。")
     else:
@@ -819,19 +818,17 @@ if __name__ == '__main__':
     # 运行 VMD-CNN-BiLSTM 模型获取预测结果
     if(Config.vmd_enable):
         print("使用 VMD-CNN-BiLSTM 组合模型进行预测...")
-        y_true, y_pred, loss_records, imf_preds, imf_trues = vmd_cnn_bilstm_pipeline(Config.file_name)
+        y_true, y_pred, imf_preds, imf_trues = vmd_cnn_bilstm_pipeline(Config.file_name)
     else:
         print("使用单模型进行预测...")
-        y_true, y_pred, loss_records = no_cmd_pipeline(Config.file_name, Config.single_model)
+        y_true, y_pred = no_cmd_pipeline(Config.file_name, Config.single_model)
 
     # 计算并打印保存回归指标
     # metrics.evaluate(y_true=y_true, y_pred=y_pred)
     metrics.save_evaluation(y_true, y_pred, filename="模型性能指标保存.txt", out_dir="result")
     
-    if os.path.exists(Config.model_predict_file):
-        print(f"文件 {Config.model_predict_file} 已存在, 跳过写入真实值")
-    else:  # 文件创建时写入真实值
-        save_pred_and_metrics_to_file(y_true=y_true, y_pred=None, file_name=Config.model_predict_file, model_name="TRUE_VALUE")
+    # 写入真实值
+    save_pred_and_metrics_to_file(y_true=y_true, y_pred=None, file_name=Config.model_predict_file, model_name="TRUE_VALUE")
 
 
     # 追加写入当前模型预测结果

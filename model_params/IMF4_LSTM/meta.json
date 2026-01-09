@@ -2,7 +2,7 @@
   "imf_idx": 3,
   "model_name": "LSTM",
   "mu": 8.40373723289323e-06,
-  "sigma": 0.02950199920430924,
+  "sigma": 0.029501999204309244,
   "window": 24,
   "train_percent": 0.8
 }

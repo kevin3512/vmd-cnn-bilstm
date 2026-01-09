@@ -186,36 +186,36 @@ def save_imf_model_train_time(
         file_name
 ):
     """
-    保存 (imf_idx, model_name) 对应的训练时间（秒）
-    - 已存在则覆盖
-    - 不存在则新增
+    保存 (IMF_i, model_name) 的训练 / 推理时间
+    - 已存在：覆盖
+    - 不存在：新增
     """
 
-    # 构造唯一行索引（非常重要，保证可覆盖）
-    row_key = f"IMF{imf_idx + 1}_{model_name}"
+    key = f"IMF{imf_idx + 1}_{model_name}"
 
-    # 新数据行
+    # 新行
     new_row = pd.DataFrame(
-        {"TRAIN_TIME_SEC": [float(train_time)]},
-        index=[row_key]
+        {"TRAIN_TIME_SEC": [train_time]},
+        index=[key]
     )
 
-    # 1. 读取已有 Sheet（如果存在）
+    # 读取旧表
     try:
         df_old = pd.read_excel(
             file_name,
             sheet_name=sheet_name,
             index_col=0
-        ) if os.path.exists(file_name) else pd.DataFrame()
-    except ValueError:
-        # Sheet 不存在
-        df_old = pd.DataFrame()
+        )
+    except Exception:
+        df_old = pd.DataFrame(columns=["TRAIN_TIME_SEC"])
 
-    # 2. 覆盖或新增行
-    df_old = df_old.drop(index=row_key, errors="ignore")
+    # 删除同名 key（如果存在）
+    df_old = df_old.drop(index=key, errors="ignore")
+
+    # 合并（覆盖语义）
     df_new = pd.concat([df_old, new_row])
 
-    # 3. 写回 Excel（替换整个 sheet，确保行为可预期）
+    # 写回（整个 sheet replace，保证行为确定）
     if os.path.exists(file_name):
         with pd.ExcelWriter(
                 file_name,
@@ -225,14 +225,7 @@ def save_imf_model_train_time(
         ) as writer:
             df_new.to_excel(writer, sheet_name=sheet_name)
     else:
-        with pd.ExcelWriter(
-                file_name,
-                engine="openpyxl",
-                mode="w"
-        ) as writer:
+        with pd.ExcelWriter(file_name, engine="openpyxl") as writer:
             df_new.to_excel(writer, sheet_name=sheet_name)
 
-    print(
-        f"[SAVE TRAIN TIME] IMF-{imf_idx + 1} | {model_name} "
-        f"-> {train_time:.4f}s"
-    )
+    print(f"[TIME] {key} -> {train_time:.4f}s 已写入（覆盖）")
