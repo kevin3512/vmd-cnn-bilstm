@@ -96,13 +96,13 @@ def select_model(imf, window):
         st = np.std(imf)
         if st > Config.std_bilstm_threshold:
             print(f"选择高频模型{Config.high_mode}，IMF 复杂度: {complexity:.4f}， 标准差: {st:.4f}")
-            return CNN_BiLSTM(window), Config.high_mode.upper()
+            return CNN_BiLSTM(window), Config.high_mode
         elif st > Config.std_lstm_threshold:
             print(f"选择中频模型{Config.mide_mode}，IMF 复杂度: {complexity:.4f}， 标准差: {st:.4f}")
-            return CNN_LSTM(window), Config.mide_mode.upper()
+            return CNN_LSTM(window), Config.mide_mode
         else:
             print(f"选择低频模型{Config.low_mode}，IMF 复杂度: {complexity:.4f}， 标准差: {st:.4f}")
-            return CNN(window), Config.low_mode.upper()
+            return CNN(window), Config.low_mode
 
 def get_model_by_name(name, window):
     if name == "CNN":
@@ -561,16 +561,16 @@ def get_model_name_from_config():
         return Config.single_model.upper()
     
 def build_model(model_name, window):
-    model_name = model_name.upper()
+    model_name = model_name
     if model_name == "CNN":
         return CNN(window)
     elif model_name == "CNN-LSTM":
         return CNN_LSTM(window)
-    elif model_name == "CNN-BILSTM":
+    elif model_name == "CNN-BiLSTM":
         return CNN_BiLSTM(window)
     elif model_name == "LSTM":
         return LSTM(window)
-    elif model_name == "BILSTM":
+    elif model_name == "BiLSTM":
         return BiLSTM(window)
     elif model_name == "RNN":
         return RNN(window)

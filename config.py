@@ -63,7 +63,7 @@ class Config:
     lr = 0.001   #学习率
     retrain_model = False  # 是否重新训练模型
     # train_models = ["CNN", "CNN-LSTM", "CNN-BiLSTM", "LSTM", "BiLSTM", "RNN"]  # 需要训练的模型列表
-    train_models = ["BiLSTM"]
+    train_models = ["CNN", "CNN-LSTM", "CNN-BiLSTM"]
     
     # 模型选择阈值（基于 IMF 预测复杂度：谱熵，范围 0-1）
     complexity_bilstm_threshold = 0.6  # 大于此值选择 CNN-BiLSTM
