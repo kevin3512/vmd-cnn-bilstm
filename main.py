@@ -304,9 +304,11 @@ def vmd_cnn_bilstm_pipeline(file_path):
         infer_start = time.time()
         pred = infer_imf_model(imf, model_zoo[(idx+1, model_name)], window)
         infer_end = time.time()
-        print(f"IMF-{idx+1} 使用模型 {model_name} 推理时间: {infer_end - infer_start:.6f} 秒")
+        infer_time_sec = infer_end - infer_start
+        infer_time_ms = int(round(infer_time_sec * 1000.0))
+        print(f"IMF-{idx+1} 使用模型 {model_name} 推理时间: {infer_time_ms} ms")
         # 保存推理时间
-        metrics.save_imf_model_train_time(imf_idx=idx, model_name=model_name, train_time=infer_end - infer_start, sheet_name="Infer_times", file_name=Config.model_predict_file)
+        metrics.save_imf_model_train_time(imf_idx=idx, model_name=model_name, train_time=infer_time_sec, sheet_name="Infer_times", file_name=Config.model_predict_file)
         predictions.append(pred)
         imf_preds.append(pred)
         imf_trues.append(imf[-len(pred):])
@@ -696,8 +698,10 @@ def train_model(series):
                     # 保存模型
                     save_imf_model(model_zoo[key])
                     train_end = time.time()
-                    print(f"[TIME] IMF-{imf_idx+1} | {model_name} 训练耗时: {train_end - train_start:.2f} 秒")
-                    metrics.save_imf_model_train_time(imf_idx=imf_idx, model_name=model_name, train_time=train_end - train_start, sheet_name="Train_times", file_name=Config.model_predict_file)
+                    train_time_sec = train_end - train_start
+                    train_time_sec_int = int(round(train_time_sec))
+                    print(f"[TIME] IMF-{imf_idx+1} | {model_name} 训练耗时: {train_time_sec_int} 秒")
+                    metrics.save_imf_model_train_time(imf_idx=imf_idx, model_name=model_name, train_time=train_time_sec, sheet_name="Train_times", file_name=Config.model_predict_file)
                     plot_loss_curve(
                         bundel["loss_history"],
                         save_path=f"train/loss_imf{imf_idx}_{model_name}.png",
@@ -724,8 +728,10 @@ def train_model(series):
                 # 保存模型
                 save_imf_model(model_zoo[key])
                 train_end = time.time()
-                print(f"[TIME] 整体序列 | {model_name} 训练耗时: {train_end - train_start:.2f} 秒")
-                metrics.save_imf_model_train_time(imf_idx=imf_idx, model_name=model_name, train_time=train_end - train_start, sheet_name="Train_times", file_name=Config.model_predict_file)
+                train_time_sec = train_end - train_start
+                train_time_sec_int = int(round(train_time_sec))
+                print(f"[TIME] 整体序列 | {model_name} 训练耗时: {train_time_sec_int} 秒")
+                metrics.save_imf_model_train_time(imf_idx=imf_idx, model_name=model_name, train_time=train_time_sec, sheet_name="Train_times", file_name=Config.model_predict_file)
                 plot_loss_curve(
                     bundel["loss_history"],
                     save_path=f"train/loss_{model_name}.png",

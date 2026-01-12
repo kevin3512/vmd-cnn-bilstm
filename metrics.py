@@ -187,15 +187,35 @@ def save_imf_model_train_time(
 ):
     """
     保存 (IMF_i, model_name) 的训练 / 推理时间
+    - train_time: 传入的时间单位是秒
+    - Train_times: 保存为秒（取整）
+    - Infer_times: 保存为毫秒（取整）
     - 已存在：覆盖
     - 不存在：新增
     """
 
     key = f"IMF{imf_idx + 1}_{model_name}"
+    
+    # 根据sheet_name确定保存单位和列名
+    if sheet_name == "Train_times":
+        # 训练时间：秒，取整
+        time_value = int(round(train_time))
+        time_col_name = "TRAIN_TIME_SEC"
+        time_unit = "秒"
+    elif sheet_name == "Infer_times":
+        # 推理时间：毫秒，取整
+        time_value = int(round(train_time * 1000.0))
+        time_col_name = "INFER_TIME_MS"
+        time_unit = "ms"
+    else:
+        # 默认：毫秒
+        time_value = int(round(train_time * 1000.0))
+        time_col_name = "TIME_MS"
+        time_unit = "ms"
 
     # 新行
     new_row = pd.DataFrame(
-        {"TRAIN_TIME_SEC": [train_time]},
+        {time_col_name: [time_value]},
         index=[key]
     )
 
@@ -206,8 +226,15 @@ def save_imf_model_train_time(
             sheet_name=sheet_name,
             index_col=0
         )
+        # 如果旧表存在但列名不同，需要更新列名
+        if "TRAIN_TIME_MS" in df_old.columns and sheet_name == "Train_times":
+            df_old = df_old.rename(columns={"TRAIN_TIME_MS": time_col_name})
+        elif "TRAIN_TIME_SEC" in df_old.columns and sheet_name == "Train_times":
+            df_old = df_old.rename(columns={"TRAIN_TIME_SEC": time_col_name})
+        elif "INFER_TIME_SEC" in df_old.columns and sheet_name == "Infer_times":
+            df_old = df_old.rename(columns={"INFER_TIME_SEC": time_col_name})
     except Exception:
-        df_old = pd.DataFrame(columns=["TRAIN_TIME_SEC"])
+        df_old = pd.DataFrame(columns=[time_col_name])
 
     # 删除同名 key（如果存在）
     df_old = df_old.drop(index=key, errors="ignore")
@@ -228,4 +255,4 @@ def save_imf_model_train_time(
         with pd.ExcelWriter(file_name, engine="openpyxl") as writer:
             df_new.to_excel(writer, sheet_name=sheet_name)
 
-    print(f"[TIME] {key} -> {train_time:.4f}s 已写入（覆盖）")
+    print(f"[TIME] {key} -> {time_value}{time_unit} 已写入（覆盖）")
