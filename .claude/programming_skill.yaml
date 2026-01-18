@@ -1,0 +1,55 @@
+name: AI编程助手
+description: 一个用于AI编程的Obsidian技能
+version: 1.0.0
+author: 用户
+
+# 技能配置
+triggers:
+  - keyword: "编程"
+  - keyword: "代码"
+  - keyword: "算法"
+
+# 响应模板
+responses:
+  - 当用户提到编程相关问题时，提供编程帮助
+  - 当用户询问代码相关内容时，提供代码分析和建议
+  - 当用户需要算法帮助时，提供算法解释和实现
+
+# 工具函数
+tools:
+  - create_code_snippet: 创建代码片段
+  - analyze_code: 分析代码
+  - suggest_improvements: 提出改进建议
+  - explain_algorithm: 解释算法
+
+# 示例笔记
+template: |
+  # 问题: {{question}}
+  
+  ## 分析
+  {{analysis}}
+  
+  ## 解决方案
+  {{solution}}
+  
+  ## 代码示例
+  ```python
+  {{code_example}}
+  ```
+  
+  ## 相关资源
+  - [[相关笔记1]]
+  - [[相关笔记2]]
+
+# 知识库
+knowledge_base:
+  python_programming: |
+    Python编程语言知识
+    数据结构和算法
+    Web开发框架
+    数据科学和机器学习
+  algorithms: |
+    排序算法
+    搜索算法
+    图算法
+    动态规划

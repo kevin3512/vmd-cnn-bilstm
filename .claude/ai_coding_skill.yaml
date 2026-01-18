@@ -1,0 +1,70 @@
+name: AI编程助手
+description: 用于AI编程的Obsidian技能
+version: 1.0.0
+author: 用户
+
+# 技能配置
+triggers:
+  - keyword: "编程"
+  - keyword: "代码"
+  - keyword: "算法"
+  - keyword: "模型"
+  - keyword: "训练"
+
+# 响应模板
+responses:
+  when user_asks_about_programming:
+    action: analyze_code
+    message: "我来帮你分析这段代码"
+    
+  when user_needs_coding_help:
+    action: provide_solution
+    message: "我来帮你实现这个功能"
+    
+  when user_needs_algorithm_explanation:
+    action: explain_algorithm
+    message: "我来解释这个算法的原理"
+
+# 示例技能文件
+
+# 编程语言模板
+template: |
+  # 问题: 编写一个[编程语言]函数来[功能描述]
+  
+  ## 我的思路
+  [你的分析思路]
+  
+  ## 解决方案
+  ```python
+  def [函数名](参数):
+      [代码实现]
+      return [返回值]
+  ```
+  
+  ## 代码说明
+  [代码解释]
+  
+  ## 测试用例
+  [测试代码]
+
+# 算法模板  
+template: |
+  # 算法: [算法名称]
+  
+  ## 算法原理
+  [算法原理说明]
+  
+  ## 时间复杂度
+  时间复杂度: [时间复杂度]
+  空间复杂度: [空间复杂度]
+  
+  ## 实现步骤
+  [实现步骤]
+  
+  ## 代码实现
+  ```python
+  [算法代码]
+  ```
+  
+  ## 示例
+  [示例输入] → [算法输出]

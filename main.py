@@ -6,15 +6,72 @@ import torch.nn as nn
 from cnn import CNN, CNN_LSTM, RNN, BiLSTM, CNN_BiLSTM, TCN, LSTM
 import matplotlib.pyplot as plt
 from config import Config
-import matplotlib.pyplot as plt
 import numpy as np
-import matplotlib.pyplot as plt
 import os
 import metrics
 import my_vmd
 from metrics import evaluate
 import time
 import json
+
+# 设备配置
+def get_device():
+    """根据配置获取计算设备"""
+    device_mode = getattr(Config, 'device_mode', 'auto').lower()
+    
+    if device_mode == "auto":
+        if torch.cuda.is_available():
+            device = torch.device('cuda')
+            print(f"自动检测到GPU: {torch.cuda.get_device_name(0)}")
+            print(f"GPU内存: {torch.cuda.get_device_properties(0).total_memory / 1024**3:.1f} GB")
+        else:
+            device = torch.device('cpu')
+            print("自动检测：无GPU，使用CPU进行训练")
+    
+    elif device_mode in ["cpu", "force_cpu"]:
+        device = torch.device('cpu')
+        print("配置设定：强制使用CPU进行训练")
+    
+    elif device_mode in ["gpu", "cuda", "force_gpu"]:
+        if torch.cuda.is_available():
+            device = torch.device('cuda')
+            print(f"配置设定：强制使用GPU: {torch.cuda.get_device_name(0)}")
+            print(f"GPU内存: {torch.cuda.get_device_properties(0).total_memory / 1024**3:.1f} GB")
+        else:
+            print("错误：配置要求使用GPU，但系统未检测到GPU！")
+            print("请检查CUDA安装或修改配置中的device_mode为'cpu'或'auto'")
+            raise RuntimeError("GPU不可用，但配置要求使用GPU")
+    
+    else:
+        print(f"错误：未知的设备模式 '{device_mode}'")
+        print("可选值: 'auto', 'cpu', 'gpu'")
+        raise ValueError(f"无效的设备配置: {device_mode}")
+    
+    return device
+
+# 全局设备变量
+DEVICE = get_device()
+
+# 安全的GPU内存管理函数
+def get_gpu_memory_usage():
+    """安全获取GPU内存使用情况"""
+    if torch.cuda.is_available() and DEVICE.type == 'cuda':
+        return torch.cuda.memory_allocated(DEVICE) / 1024**2
+    else:
+        return 0
+
+def clear_gpu_cache():
+    """安全清理GPU缓存"""
+    if torch.cuda.is_available() and DEVICE.type == 'cuda':
+        torch.cuda.empty_cache()
+
+def to_device(tensor):
+    """将tensor移动到配置的设备"""
+    return tensor.to(DEVICE)
+
+def to_device_batch(data_list):
+    """批量将数据移动到配置的设备"""
+    return [data.to(DEVICE) for data in data_list]
 
 
 
@@ -142,17 +199,20 @@ def train_and_predict(series, model, window, epochs=Config.epochs, per_imf_norma
     X_train, X_test = X[:split], X[split:]
     y_train, y_test = y[:split], y[split:]
 
-    X_train = torch.tensor(X_train, dtype=torch.float32)
-    y_train = torch.tensor(y_train, dtype=torch.float32)
-    X_test = torch.tensor(X_test, dtype=torch.float32)
+# 将数据移动到设备
+    X_train = torch.tensor(X_train, dtype=torch.float32).to(DEVICE)
+    y_train = torch.tensor(y_train, dtype=torch.float32).to(DEVICE)
+    X_test = torch.tensor(X_test, dtype=torch.float32).to(DEVICE)
 
+    # 将模型移动到设备
+    model = model.to(DEVICE)
     optimizer = torch.optim.Adam(model.parameters(), lr=Config.lr)
     if loss_type == 'mse':
-        loss_fn = nn.MSELoss()
+        loss_fn = nn.MSELoss().to(DEVICE)
     elif loss_type == 'mae':
-        loss_fn = nn.L1Loss()
+        loss_fn = nn.L1Loss().to(DEVICE)
     elif loss_type == 'huber':
-        loss_fn = nn.SmoothL1Loss()
+        loss_fn = nn.SmoothL1Loss().to(DEVICE)
     else:
         raise ValueError(f"Unsupported loss_type: {loss_type}")
 
@@ -178,18 +238,34 @@ def train_and_predict(series, model, window, epochs=Config.epochs, per_imf_norma
 
         avg_loss = float(np.mean(epoch_losses)) if epoch_losses else 0.0
         loss_history.append(avg_loss)
+# 打印训练进度和设备信息
         if (epoch + 1) % 100 == 0 or epoch == 0: # 100的倍数打印一次
-            print(f"Epoch {epoch+1}/{epochs}, Loss: {avg_loss:.6f}")
+            if DEVICE.type == 'cuda':
+                gpu_mem = get_gpu_memory_usage()
+                print(f"Epoch {epoch+1}/{epochs}, Loss: {avg_loss:.6f}, GPU内存: {gpu_mem:.1f} MB")
+            else:
+                print(f"Epoch {epoch+1}/{epochs}, Loss: {avg_loss:.6f}")
 
     train_end = time.time()
     train_time = train_end - train_start
     print(f"Training time: {train_time:.4f} seconds")
 
+    # 推理模式
+    model.eval()
     inference_start = time.time()
-    preds = model(X_test).detach().numpy().flatten()
+    with torch.no_grad():
+        preds = model(X_test).squeeze()
+        # 将预测结果移回CPU
+        preds = preds.cpu().numpy().flatten()
     inference_end = time.time()
     inference_time = inference_end - inference_start
     print(f"Inference time: {inference_time:.6f} seconds")
+
+    # 清理GPU内存
+    clear_gpu_cache()
+    if DEVICE.type == 'cuda':
+        gpu_mem = get_gpu_memory_usage()
+        print(f"GPU内存清理后: {gpu_mem:.1f} MB")
 
     if per_imf_normalize:
         preds = preds * sigma + mu
@@ -603,16 +679,17 @@ def train_imf_model(
     X, y = create_dataset(series, window)
     split = int(len(X) * Config.train_percent)
 
-    X_train = torch.tensor(X[:split], dtype=torch.float32)
-    y_train = torch.tensor(y[:split], dtype=torch.float32)
+# 将数据移动到设备
+    X_train = torch.tensor(X[:split], dtype=torch.float32).to(DEVICE)
+    y_train = torch.tensor(y[:split], dtype=torch.float32).to(DEVICE)
 
-    model = build_model(model_name, window)
+    model = build_model(model_name, window).to(DEVICE)
     optimizer = torch.optim.Adam(model.parameters(), lr=Config.lr)
 
     loss_fn = {
-        "mse": nn.MSELoss(),
-        "mae": nn.L1Loss(),
-        "huber": nn.SmoothL1Loss()
+        "mse": nn.MSELoss().to(DEVICE),
+        "mae": nn.L1Loss().to(DEVICE),
+        "huber": nn.SmoothL1Loss().to(DEVICE)
     }[loss_type]
 
     loss_history = []
@@ -633,11 +710,15 @@ def train_imf_model(
             optimizer.step()
 
             epoch_losses.append(loss.item())
-
+        
         avg_loss = float(np.mean(epoch_losses)) if epoch_losses else 0.0
         loss_history.append(avg_loss)
         if (epoch + 1) % 100 == 0 or epoch == 0: # 100的倍数打印一次
-            print(f"Epoch {epoch+1}/{epochs}, Loss: {avg_loss:.6f}")
+            if DEVICE.type == 'cuda':
+                gpu_mem = get_gpu_memory_usage()
+                print(f"Epoch {epoch+1}/{epochs}, Loss: {avg_loss:.6f}, GPU内存: {gpu_mem:.1f} MB")
+            else:
+                print(f"Epoch {epoch+1}/{epochs}, Loss: {avg_loss:.6f}")
 
     return {
         "model": model,
@@ -658,11 +739,22 @@ def infer_imf_model(imf, trained_bundle, window):
 
     X, _ = create_dataset(series_used, window)
     split = int(len(X) * Config.test_percent)
-    X_test = torch.tensor(X[-split:], dtype=torch.float32)
+    X_test = torch.tensor(X[-split:], dtype=torch.float32).to(DEVICE)
 
-    model = trained_bundle["model"]
-    preds = model(X_test).detach().numpy().flatten()
+    model = trained_bundle["model"].to(DEVICE)
+    
+    # 推理模式
+    model.eval()
+    with torch.no_grad():
+        preds = model(X_test).squeeze()
+        # 将预测结果移回CPU
+        preds = preds.cpu().numpy().flatten()
+    
     preds = preds * sigma + mu
+    
+    # 清理GPU内存
+    clear_gpu_cache()
+    
     return preds
 
 def train_model(series):
@@ -746,12 +838,14 @@ def load_imf_model(imf_idx, model_name, window, save_root="model_params"):
     with open(meta_path, "r", encoding="utf-8") as f:
         meta = json.load(f)
 
-    # 2. 构建模型结构
+# 2. 构建模型结构
     model = build_model(model_name, window)
-    model.load_state_dict(torch.load(model_path, map_location="cpu"))
+    # 加载模型参数到正确的设备
+    model.load_state_dict(torch.load(model_path, map_location=DEVICE))
+    model = model.to(DEVICE)
     model.eval()
 
-    print(f"[LOAD] IMF-{imf_idx+1} | {model_name} loaded.")
+    print(f"[LOAD] IMF-{imf_idx+1} | {model_name} loaded to {DEVICE}.")
 
     return {
         "model": model,
@@ -770,9 +864,10 @@ def save_imf_model(trained_bundle, save_root="model_params"):
     save_dir = os.path.join(save_root, f"IMF{imf_idx+1}_{model_name}")
     os.makedirs(save_dir, exist_ok=True)
 
-    # 1. 保存模型参数
+# 1. 保存模型参数（确保在CPU上保存以兼容性）
+    model = trained_bundle["model"].cpu()
     torch.save(
-        trained_bundle["model"].state_dict(),
+        model.state_dict(),
         os.path.join(save_dir, "model.pth")
     )
 
@@ -793,6 +888,15 @@ def save_imf_model(trained_bundle, save_root="model_params"):
 
 
 if __name__ == '__main__':
+    # 显示设备信息
+    print("=" * 60)
+    print(f"使用设备: {DEVICE}")
+    print(f"设备模式: {getattr(Config, 'device_mode', 'auto')}")
+    if torch.cuda.is_available():
+        print(f"GPU: {torch.cuda.get_device_name(0)}")
+        print(f"GPU内存总量: {torch.cuda.get_device_properties(0).total_memory / 1024**3:.1f} GB")
+    print("=" * 60)
+    
     #删除所有.png文件
     delete_all_png_files()
     model_zoo = {}

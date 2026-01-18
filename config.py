@@ -33,8 +33,15 @@ class Config:
 
 
 
-    ####################################----main.py 中的配置----####################################
+####################################----main.py 中的配置----####################################
     model_predict_file = "result/模型运行结果.xlsx"  # 模型预测结果保存文件名
+    
+    # 设备配置 - 选择使用CPU还是GPU
+    # 可选值: "auto", "cpu", "gpu", "cuda"
+    # "auto": 自动检测，有GPU则用GPU，无GPU则用CPU
+    # "cpu": 强制使用CPU
+    # "gpu"/"cuda": 强制使用GPU（如果没有GPU会报错）
+    device_mode = "gpu"  # 默认自动检测
 
     # VMD参数配置
     K=9
@@ -63,7 +70,7 @@ class Config:
     lr = 0.001   #学习率
     retrain_model = False  # 是否重新训练模型
     # train_models = ["CNN", "CNN-LSTM", "CNN-BiLSTM", "LSTM", "BiLSTM", "RNN"]  # 需要训练的模型列表
-    train_models = ["CNN", "CNN-LSTM", "CNN-BiLSTM"]
+    train_models = ["CNN"]
     
     # 模型选择阈值（基于 IMF 预测复杂度：谱熵，范围 0-1）
     complexity_bilstm_threshold = 0.6  # 大于此值选择 CNN-BiLSTM
